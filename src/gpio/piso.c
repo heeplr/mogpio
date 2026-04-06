@@ -1,0 +1,203 @@
+/*
+ * piso.c
+ *
+ * Driver for PISO (Parallel-In, Serial-Out) shift-register chains.
+ *
+ * This driver is input-only by design. It rejects attempts to configure any
+ * pin as an output.
+ */
+
+#include "piso.h"
+
+#include "pico/stdlib.h"
+#include "hardware/gpio.h"
+
+#include <string.h>
+
+
+static int _validate_pin(const hal_gpio_piso_ctx_t *ctx, uint8_t pin)
+{
+    if (ctx == NULL) {
+        return HAL_GPIO_ERR_INVAL;
+    }
+    if (pin >= ctx->pin_count || pin >= HAL_PISO_MAX_PINS) {
+        return HAL_GPIO_ERR_BOUNDS;
+    }
+    return HAL_GPIO_OK;
+}
+
+static inline uint8_t _mapped_pin(const hal_gpio_piso_ctx_t *ctx, uint8_t pin)
+{
+    /*
+     * The reversal flag is useful when the bit order of the chain is opposite
+     * to the order the application wants to see.
+     */
+    return ctx->reverse_order ? (uint8_t)(ctx->pin_count - 1u - pin) : pin;
+}
+
+static void piso_refresh_cache(hal_gpio_piso_ctx_t *ctx)
+{
+    /*
+     * 74HC165 sequence:
+     *   1) Drive /PL (load pin) low then high to capture parallel inputs.
+     *   2) Clock the chain and sample the serial output bit once per pin.
+     *
+     */
+    gpio_put(ctx->load_pin, false);
+    gpio_put(ctx->load_pin, true);
+
+    for (uint8_t i = 0; i < ctx->pin_count; ++i) {
+        const uint8_t dst = _mapped_pin(ctx, i);
+        ctx->cached_bits[dst] = gpio_get(ctx->data_pin);
+
+        gpio_put(ctx->clock_pin, true);
+        gpio_put(ctx->clock_pin, false);
+    }
+}
+
+static int piso_init(void *vctx)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    if (ctx == NULL) {
+        return HAL_GPIO_ERR_INVAL;
+    }
+
+    gpio_init(ctx->data_pin);
+    gpio_init(ctx->clock_pin);
+    gpio_init(ctx->load_pin);
+
+    /* read the chain on the data pin, while the other two pins are outputs. */
+    gpio_set_dir(ctx->data_pin, false);
+    gpio_set_dir(ctx->clock_pin, true);
+    gpio_set_dir(ctx->load_pin, true);
+
+    gpio_set_pulls(ctx->data_pin, false, false);
+    gpio_put(ctx->clock_pin, false);
+    gpio_put(ctx->load_pin, true);
+
+    memset(ctx->cached_bits, 0, sizeof(ctx->cached_bits));
+    memset(ctx->function, 0, sizeof(ctx->function));
+    memset(ctx->configured, 0, sizeof(ctx->configured));
+
+    return HAL_GPIO_OK;
+}
+
+static int piso_deinit(void *vctx)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    if (ctx == NULL) {
+        return HAL_GPIO_ERR_INVAL;
+    }
+
+    gpio_deinit(ctx->data_pin);
+    gpio_deinit(ctx->clock_pin);
+    gpio_deinit(ctx->load_pin);
+
+    return HAL_GPIO_OK;
+}
+
+static int piso_pin_config(void *vctx, uint8_t pin,
+                           hal_gpio_function_t function,
+                           hal_gpio_mode_t mode)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    int rc = _validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    switch (function) {
+        case HAL_GPIO_FN_OUTPUT:
+            return HAL_GPIO_ERR_UNSUPPORTED;
+
+        case HAL_GPIO_FN_NONE:
+            ctx->function[pin] = HAL_GPIO_FN_NONE;
+            ctx->configured[pin] = false;
+            break;
+
+        case HAL_GPIO_FN_NOCHANGE:
+            break;
+
+        default:
+            return HAL_GPIO_ERR_INVAL;
+    }
+
+    /*
+     * A PISO bank cannot generate a pull-up/pull-down on the external inputs.
+     * The mode is therefore only accepted as PUSHPULL to keep the API honest.
+     */
+    switch (mode) {
+        case HAL_GPIO_MODE_PUSHPULL:
+            return HAL_GPIO_ERR_UNSUPPORTED;
+
+        case HAL_GPIO_MODE_NOCHANGE:
+            break;
+
+        default:
+            ctx->function[pin] = HAL_GPIO_FN_INPUT;
+            break;
+    }
+
+    ctx->configured[pin] = true;
+    return HAL_GPIO_OK;
+}
+
+static int piso_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *function)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    int rc = _validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    *function = ctx->function[pin];
+    return HAL_GPIO_OK;
+}
+
+static int piso_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    int rc = _validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+    /* a PISO will always be in PUSHPULL mode */
+    *mode = HAL_GPIO_MODE_PUSHPULL;
+    return HAL_GPIO_OK;
+}
+
+static int piso_read(void *vctx, uint8_t pin, bool *value)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    int rc = _validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    if (!ctx->configured[pin] || ctx->function[pin] != HAL_GPIO_FN_INPUT) {
+        return HAL_GPIO_ERR_STATE;
+    }
+
+    /* Always refresh before a read so the caller gets the current chain state. */
+    piso_refresh_cache(ctx);
+    *value = ctx->cached_bits[pin] ? 1 : 0;
+    return HAL_GPIO_OK;
+}
+
+static int piso_write(void *vctx, uint8_t pin, bool value)
+{
+    (void)vctx;
+    (void)pin;
+    (void)value;
+    return HAL_GPIO_ERR_UNSUPPORTED;
+}
+
+const hal_gpio_driver_ops_t hal_gpio_piso_ops = {
+    .init = piso_init,
+    .deinit = piso_deinit,
+    .pin_config = piso_pin_config,
+    .read = piso_read,
+    .write = piso_write,
+    .get_function = piso_get_function,
+    .get_mode = piso_get_mode
+};
