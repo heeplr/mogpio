@@ -2,9 +2,6 @@
 #ifndef _USBIO_H
 #define _USBIO_H
 
-#include <stdbool.h>
-#include <stdint.h>
-#include "tusb.h"
 
 // -----------------------------------------------------------------------------
 // USBIO protocol

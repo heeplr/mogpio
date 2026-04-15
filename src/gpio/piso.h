@@ -1,6 +1,4 @@
 
-#include "hal_gpio_board.h"
-
 #define HAL_PISO_MAX_PINS     16u
 
 

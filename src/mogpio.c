@@ -2,9 +2,6 @@
 #include "hal_gpio.h"
 #include "msc_fs.h"
 
-#ifdef HAVE_LOGGING
-#include "pico/stdlib.h"
-#endif
 
 void tud_mount_cb(void) {}
 

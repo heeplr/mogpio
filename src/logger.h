@@ -2,9 +2,6 @@
 #ifndef _LOGGER_H
 #define _LOGGER_H
 
-#include "bsp/board.h"
-
-
 /* message logging macros */
 #ifdef DEBUG_OUT
 #define HAVE_LOGGING 1
@@ -21,6 +18,13 @@
 #define WARN(...)
 #define ERROR(...)
 #endif /* DEBUG_OUT */
+
+
+#ifdef HAVE_LOGGING
+#include "pico/stdlib.h"
+#endif
+
+#include "bsp/board.h"
 
 
 #endif /* _LOGGER_H */

@@ -17,12 +17,17 @@
  * which Pico pins / shift-register lines that bank is attached to.
  */
 
+#include <stddef.h>
+#include <stdint.h>
+
+#include "hal_gpio.h"
+#include "hal_gpio_board.h"
+
 /* todo: make this conditional */
 #include "gpio/rpi_pico.h"
 #include "gpio/piso.h"
 #include "gpio/sipo.h"
 
-#include "hal_gpio_board.h"
 
 
 enum {

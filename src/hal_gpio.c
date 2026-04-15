@@ -10,9 +10,13 @@
  *   - and enforce a minimal initialized/not-initialized state for the system.
  */
 
+#include <stdbool.h>
+#include <stddef.h>
+#include <stdint.h>
+
+#include "hal_gpio.h"
 #include "hal_gpio_board.h"
 
-#include <stdbool.h>
 
 /* initialization state */
 static bool s_hal_initialized = false;

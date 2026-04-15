@@ -7,12 +7,16 @@
  * pin as an output.
  */
 
+#include <stddef.h>
+#include <string.h>
+
+#include "hal_gpio.h"
+#include "hal_gpio_board.h"
 #include "piso.h"
 
 #include "pico/stdlib.h"
 #include "hardware/gpio.h"
 
-#include <string.h>
 
 
 static int _validate_pin(const hal_gpio_piso_ctx_t *ctx, uint8_t pin)

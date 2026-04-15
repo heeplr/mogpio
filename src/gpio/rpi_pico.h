@@ -1,5 +1,4 @@
 
-#include "hal_gpio_board.h"
 
 #ifdef DEBUG_OUT
 #define HAL_PICO_MAX_PINS 28u

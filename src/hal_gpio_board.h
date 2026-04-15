@@ -7,8 +7,6 @@
 #ifndef HAL_GPIO_BOARD_H
 #define HAL_GPIO_BOARD_H
 
-#include "hal_gpio.h"
-#include <stddef.h>
 
 #ifdef __cplusplus
 extern "C" {
