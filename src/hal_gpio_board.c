@@ -62,7 +62,7 @@ static hal_gpio_pico_ctx_t s_pico_ctx = {
     //~ .reverse_order = false,
 //~ };
 
-static const hal_gpio_bank_desc_t s_banks[] = {
+static const hal_gpio_bank_t s_banks[] = {
     {
         .bank_id = HAL_BANK_PICO,
         .name = "pico-gpio",
@@ -86,7 +86,7 @@ static const hal_gpio_bank_desc_t s_banks[] = {
     //~ },
 };
 
-const hal_gpio_board_desc_t g_hal_gpio_board = {
+const hal_gpio_board_t g_hal_gpio_board = {
     .banks = s_banks,
     .bank_count = sizeof(s_banks) / sizeof(s_banks[0]),
 };

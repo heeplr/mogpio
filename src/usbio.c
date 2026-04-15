@@ -5,6 +5,7 @@
 #include "hal_gpio.h"
 #include "logger.h"
 
+/* create 32 bit pinmap with available pins' bit set */
 static uint32_t pin_bmap(uint8_t bankid)
 {
     uint32_t map = 0;

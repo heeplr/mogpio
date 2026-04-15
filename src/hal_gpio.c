@@ -18,10 +18,10 @@
 static bool s_hal_initialized = false;
 
 /* lookup bank by id */
-static const hal_gpio_bank_desc_t *hal_find_bank(uint8_t bankid)
+static const hal_gpio_bank_t *hal_find_bank(uint8_t bankid)
 {
     for (size_t i = 0; i < g_hal_gpio_board.bank_count; ++i) {
-        const hal_gpio_bank_desc_t *bank = &g_hal_gpio_board.banks[i];
+        const hal_gpio_bank_t *bank = &g_hal_gpio_board.banks[i];
         if (bank->bank_id == bankid) {
             return bank;
         }
@@ -64,7 +64,7 @@ int hal_gpio_init(void)
     }
 
     for (size_t i = 0; i < g_hal_gpio_board.bank_count; ++i) {
-        const hal_gpio_bank_desc_t *bank = &g_hal_gpio_board.banks[i];
+        const hal_gpio_bank_t *bank = &g_hal_gpio_board.banks[i];
         if (bank->ops == NULL || bank->ops->init == NULL) {
             return HAL_GPIO_ERR_INVAL;
         }
@@ -88,7 +88,7 @@ int hal_gpio_deinit(void)
 
     /* Deinitialize in reverse order */
     for (size_t i = g_hal_gpio_board.bank_count; i > 0; --i) {
-        const hal_gpio_bank_desc_t *bank = &g_hal_gpio_board.banks[i - 1u];
+        const hal_gpio_bank_t *bank = &g_hal_gpio_board.banks[i - 1u];
         if (bank->ops != NULL && bank->ops->deinit != NULL) {
             (void)bank->ops->deinit(bank->ctx);
         }
@@ -107,7 +107,7 @@ int hal_gpio_pin_config(uint8_t bankid, uint8_t pin,
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
-    const hal_gpio_bank_desc_t *bank = hal_find_bank(bankid);
+    const hal_gpio_bank_t *bank = hal_find_bank(bankid);
     if (bank == NULL) {
         return HAL_GPIO_ERR_BOUNDS;
     }
@@ -128,7 +128,7 @@ int hal_gpio_read(uint8_t bankid, uint8_t pin, bool *value)
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
-    const hal_gpio_bank_desc_t *bank = hal_find_bank(bankid);
+    const hal_gpio_bank_t *bank = hal_find_bank(bankid);
     if (bank == NULL) {
         return HAL_GPIO_ERR_BOUNDS;
     }
@@ -149,7 +149,7 @@ int hal_gpio_write(uint8_t bankid, uint8_t pin, bool value)
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
-    const hal_gpio_bank_desc_t *bank = hal_find_bank(bankid);
+    const hal_gpio_bank_t *bank = hal_find_bank(bankid);
     if (bank == NULL) {
         return HAL_GPIO_ERR_BOUNDS;
     }
@@ -163,13 +163,14 @@ int hal_gpio_write(uint8_t bankid, uint8_t pin, bool value)
     return bank->ops->write(bank->ctx, pin, value);
 }
 
+/* get current function of a pin */
 int hal_gpio_get_function(uint8_t bankid, uint8_t pin, hal_gpio_function_t *function)
 {
     if (!s_hal_initialized) {
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
-    const hal_gpio_bank_desc_t *bank = hal_find_bank(bankid);
+    const hal_gpio_bank_t *bank = hal_find_bank(bankid);
     if (bank == NULL) {
         return HAL_GPIO_ERR_BOUNDS;
     }
@@ -183,12 +184,13 @@ int hal_gpio_get_function(uint8_t bankid, uint8_t pin, hal_gpio_function_t *func
     return bank->ops->get_function(bank->ctx, pin, function);
 }
 
+/* get current mode of a pin */
 int hal_gpio_get_mode(uint8_t bankid, uint8_t pin, hal_gpio_mode_t *mode) {
     if (!s_hal_initialized) {
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
-    const hal_gpio_bank_desc_t *bank = hal_find_bank(bankid);
+    const hal_gpio_bank_t *bank = hal_find_bank(bankid);
     if (bank == NULL) {
         return HAL_GPIO_ERR_BOUNDS;
     }

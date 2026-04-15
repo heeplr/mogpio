@@ -38,7 +38,7 @@ typedef struct {
     uint8_t pin_count;
     const hal_gpio_driver_ops_t *ops;
     void *ctx;
-} hal_gpio_bank_desc_t;
+} hal_gpio_bank_t;
 
 /*
  * The complete board description.
@@ -46,9 +46,9 @@ typedef struct {
  * This is the single handoff point from board layout into the HAL.
  */
 typedef struct {
-    const hal_gpio_bank_desc_t *banks;
+    const hal_gpio_bank_t *banks;
     size_t bank_count;
-} hal_gpio_board_desc_t;
+} hal_gpio_board_t;
 
 
 /*
@@ -56,7 +56,7 @@ typedef struct {
  *
  * The HAL core reads this symbol and dispatches every API call through it.
  */
-extern const hal_gpio_board_desc_t g_hal_gpio_board;
+extern const hal_gpio_board_t g_hal_gpio_board;
 
 #ifdef __cplusplus
 }
