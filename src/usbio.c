@@ -223,10 +223,14 @@ _hp_error:
 }
 
 
-static bool control_xfer_cb(uint8_t rhport,
-                           uint8_t stage,
-                           const tusb_control_request_t *request) {
-
+/*******************************************************************************
+ *  TinyUSB callbacks
+ */
+/* Invoked when received control request with VENDOR TYPE */
+bool tud_vendor_control_xfer_cb(uint8_t rhport,
+                               uint8_t stage,
+                               const tusb_control_request_t *request)
+{
     /* Control transfer buffers */
     static usbio_ctrl_pkt_t ctrl_req;
     static usbio_ctrl_pkt_t ctrl_resp;
@@ -344,16 +348,4 @@ static bool control_xfer_cb(uint8_t rhport,
     }
 
     return false;
-}
-
-/*******************************************************************************
- *  TinyUSB callbacks
- */
-/* Invoked when received control request with VENDOR TYPE */
-bool tud_vendor_control_xfer_cb(uint8_t rhport,
-                               uint8_t stage,
-                               const tusb_control_request_t *request)
-{
-    /* just forward */
-    return control_xfer_cb(rhport, stage, request);
 }
