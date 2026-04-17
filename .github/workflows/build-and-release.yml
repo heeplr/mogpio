@@ -44,6 +44,6 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           files: |
-            build/**/*.uf2
+            build/*.uf2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
