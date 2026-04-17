@@ -11,7 +11,7 @@
 #include <stddef.h>
 
 #include "hal_gpio.h"
-#include "hal_gpio_board.h"
+#include "hal_gpio_flavor.h"
 #include "sipo.h"
 
 #include "pico/stdlib.h"

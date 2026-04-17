@@ -12,7 +12,7 @@
 
 #include "logger.h"
 #include "hal_gpio.h"
-#include "hal_gpio_board.h"
+#include "hal_gpio_flavor.h"
 #include "rpi_pico.h"
 
 #include "pico/stdlib.h"

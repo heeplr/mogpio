@@ -5,7 +5,7 @@
  *
  * This file knows nothing about the hardware details of any bank. It only
  * knows how to:
- *   - look up a bank in the hal_gpio_board description,
+ *   - look up a bank in the hal_gpio_flavor description,
  *   - call the bank's driver through function pointers,
  *   - and enforce a minimal initialized/not-initialized state for the system.
  */
@@ -15,7 +15,7 @@
 #include <stdint.h>
 
 #include "hal_gpio.h"
-#include "hal_gpio_board.h"
+#include "hal_gpio_flavor.h"
 
 
 /* initialization state */
@@ -24,8 +24,8 @@ static bool s_hal_initialized = false;
 /* lookup bank by id */
 static const hal_gpio_bank_t *hal_find_bank(uint8_t bankid)
 {
-    for (size_t i = 0; i < g_hal_gpio_board.bank_count; ++i) {
-        const hal_gpio_bank_t *bank = &g_hal_gpio_board.banks[i];
+    for (size_t i = 0; i < g_hal_gpio_flavor.bank_count; ++i) {
+        const hal_gpio_bank_t *bank = &g_hal_gpio_flavor.banks[i];
         if (bank->bank_id == bankid) {
             return bank;
         }
@@ -36,25 +36,25 @@ static const hal_gpio_bank_t *hal_find_bank(uint8_t bankid)
 /* return total amount of banks accessible to HAL */
 unsigned int hal_gpio_bankcount(void)
 {
-    return g_hal_gpio_board.bank_count;
+    return g_hal_gpio_flavor.bank_count;
 }
 
 /* return amount of GPIOs provided by one bank */
 unsigned int hal_gpio_bank_pincount(uint8_t bankid)
 {
-    if(bankid > g_hal_gpio_board.bank_count)
+    if(bankid > g_hal_gpio_flavor.bank_count)
         return 0;
 
     size_t bank = (size_t) bankid;
-    return g_hal_gpio_board.banks[bank].pin_count;
+    return g_hal_gpio_flavor.banks[bank].pin_count;
 }
 
 /* return total GPIO pincount accessible to HAL */
 unsigned int hal_gpio_pincount(void)
 {
     unsigned int count = 0;
-    for (size_t i = 0; i < g_hal_gpio_board.bank_count; ++i) {
-        count += g_hal_gpio_board.banks[i].pin_count;
+    for (size_t i = 0; i < g_hal_gpio_flavor.bank_count; ++i) {
+        count += g_hal_gpio_flavor.banks[i].pin_count;
     }
     return count;
 }
@@ -67,8 +67,8 @@ int hal_gpio_init(void)
         return HAL_GPIO_OK;
     }
 
-    for (size_t i = 0; i < g_hal_gpio_board.bank_count; ++i) {
-        const hal_gpio_bank_t *bank = &g_hal_gpio_board.banks[i];
+    for (size_t i = 0; i < g_hal_gpio_flavor.bank_count; ++i) {
+        const hal_gpio_bank_t *bank = &g_hal_gpio_flavor.banks[i];
         if (bank->ops == NULL || bank->ops->init == NULL) {
             return HAL_GPIO_ERR_INVAL;
         }
@@ -91,8 +91,8 @@ int hal_gpio_deinit(void)
     }
 
     /* Deinitialize in reverse order */
-    for (size_t i = g_hal_gpio_board.bank_count; i > 0; --i) {
-        const hal_gpio_bank_t *bank = &g_hal_gpio_board.banks[i - 1u];
+    for (size_t i = g_hal_gpio_flavor.bank_count; i > 0; --i) {
+        const hal_gpio_bank_t *bank = &g_hal_gpio_flavor.banks[i - 1u];
         if (bank->ops != NULL && bank->ops->deinit != NULL) {
             (void)bank->ops->deinit(bank->ctx);
         }

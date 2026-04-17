@@ -1,4 +1,6 @@
 
+#ifndef _RPI_PICO
+#define _RPI_PICO
 
 #ifdef DEBUG_OUT
 #define HAL_PICO_MAX_PINS 28u
@@ -22,3 +24,5 @@ typedef struct {
 
 
 extern const hal_gpio_driver_ops_t hal_gpio_pico_ops;
+
+#endif /* _RPI_PICO */

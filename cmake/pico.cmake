@@ -1,0 +1,81 @@
+
+set(CMAKE_C_STANDARD 11)
+set(CMAKE_CXX_STANDARD 17)
+
+# TinyUSB
+set(FAMILY rp2040)
+set(TINYUSB_FAMILY_PROJECT_NAME_PREFIX "tinyusb_dev_")
+set(TOP ${PICO_TINYUSB_PATH})
+
+# Initialize Pico SDK
+pico_sdk_init()
+
+# Add the firmware executable
+add_executable(mogpio)
+
+target_sources(mogpio PUBLIC
+    src/mogpio.c
+    src/usb_descriptors.c
+    src/msc_fs.c
+    src/usbio.c
+    src/hal_gpio.c
+)
+
+if(FLAVOR STREQUAL "intern")
+    set(FLAVOR_DEFINE FLAVOR_INTERN)
+    target_sources(mogpio PUBLIC
+        src/gpio/rpi_pico.c
+        src/flavors/intern.c
+    )
+
+elseif(FLAVOR STREQUAL "intern-sipo-piso")
+    set(FLAVOR_DEFINE FLAVOR_INTERN_SIPO_PISO)
+    target_sources(mogpio PUBLIC
+        src/gpio/rpi_pico.c
+        src/gpio/sipo.c
+        src/gpio/piso.c
+        src/flavors/intern-sipo-piso.c
+    )
+
+elseif(FLAVOR STREQUAL "sipo-piso")
+    set(FLAVOR_DEFINE FLAVOR_SIPO_PISO)
+    target_sources(mogpio PUBLIC
+        src/gpio/sipo.c
+        src/gpio/piso.c
+        src/flavors/sipo-piso.c
+    )
+
+else()
+    message(FATAL_ERROR "platform ${PLATFORM} doesn't support flavor ${FLAVOR}")
+
+endif()
+
+# provide FLAVOR_* macro
+target_compile_definitions(mogpio PRIVATE ${FLAVOR_DEFINE})
+
+
+# provide PLATFORM_PICO macro
+target_compile_definitions(mogpio PRIVATE PLATFORM_PICO)
+
+# Link libraries
+target_link_libraries(mogpio
+    pico_stdlib
+    tinyusb_device
+    tinyusb_board
+)
+
+# Create UF2 output
+pico_add_extra_outputs(mogpio)
+
+
+# debug compile ?
+if(CMAKE_BUILD_TYPE STREQUAL "Debug")
+    # enable stdout via UART
+    pico_enable_stdio_uart(mogpio 1)
+else()
+    # disable stdio via UART
+    pico_enable_stdio_uart(mogpio 0)
+endif()
+
+# no USB CDC for stdout
+pico_enable_stdio_usb(mogpio 0)

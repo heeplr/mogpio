@@ -1,5 +1,5 @@
 /*
- * hal_gpio_board.h
+ * hal_gpio_flavor.h
  *
  * Compile-time board layout
  */
@@ -46,7 +46,7 @@ typedef struct {
 typedef struct {
     const hal_gpio_bank_t *banks;
     size_t bank_count;
-} hal_gpio_board_t;
+} hal_gpio_flavor_t;
 
 
 /*
@@ -54,7 +54,8 @@ typedef struct {
  *
  * The HAL core reads this symbol and dispatches every API call through it.
  */
-extern const hal_gpio_board_t g_hal_gpio_board;
+extern const hal_gpio_flavor_t g_hal_gpio_flavor;
+
 
 #ifdef __cplusplus
 }
