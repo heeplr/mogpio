@@ -62,14 +62,17 @@ jobs:
           source_dir: "."
           cmake_args: ${{ matrix.args }}
 
+      - name: Rename output file
+        run: mv build/mogpio.uf2 build/${{ matrix.filename }}
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.flavor }}
-          path: build/*.uf2
+          path: build/${{ matrix.filename }}
 
   release:
-    needs: build-and-release
+    needs: build
     runs-on: ubuntu-latest
     if: github.ref_type == 'tag'
     steps:
