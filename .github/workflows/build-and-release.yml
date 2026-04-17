@@ -35,6 +35,7 @@ jobs:
       - name: Build ${{ matrix.flavor }}
         uses: samyarsadat/Pico-Build-Action@v1
         with:
+          source_dir: "."
           cmake_flags: ${{ matrix.flags }}
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
