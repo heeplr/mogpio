@@ -13,22 +13,22 @@ jobs:
       matrix:
         include:
           - flavor: pico-intern
-            flags: "-D PLATFORM=pico -D FLAVOR=intern"
+            args: "-D PLATFORM=pico -D FLAVOR=intern"
             filename: mogpio-intern-pico.uf2
           - flavor: pico-intern-sipo-piso
-            flags: "-D PLATFORM=pico -D FLAVOR=intern-sipo-piso"
+            args: "-D PLATFORM=pico -D FLAVOR=intern-sipo-piso"
             filename: mogpio-intern-sipo-piso-pico.uf2
           - flavor: pico-sipo-piso
-            flags: "-D PLATFORM=pico -D FLAVOR=sipo-piso"
+            args: "-D PLATFORM=pico -D FLAVOR=sipo-piso"
             filename: mogpio-sipo-piso-pico.uf2
           - flavor: pico2-intern
-            flags: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern"
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern"
             filename: mogpio-intern-pico2.uf2
           - flavor: pico2-intern-sipo-piso
-            flags: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern-sipo-piso"
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern-sipo-piso"
             filename: mogpio-intern-sipo-piso-pico2.uf2
           - flavor: pico2-sipo-piso
-            flags: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=sipo-piso"
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=sipo-piso"
             filename: mogpio-sipo-piso-pico2.uf2
 
     steps:
@@ -37,7 +37,7 @@ jobs:
         uses: samyarsadat/Pico-Build-Action@v1
         with:
           source_dir: "."
-          cmake_flags: ${{ matrix.flags }}
+          cmake_args: ${{ matrix.args }}
       - name: Upload Release Asset
         uses: softprops/action-gh-release@v1
         with:
