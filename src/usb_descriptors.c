@@ -1,6 +1,6 @@
 #include <string.h>
 #include <stdint.h>
-#include "pico/unique_id.h"
+#include "bsp/board_api.h"
 
 #include "tusb.h"
 
@@ -101,15 +101,7 @@ uint16_t const *tud_descriptor_string_cb(uint8_t index, uint16_t langid)
             break;
 
         case USBD_STR_SERIAL_NUMBER:
-            pico_unique_board_id_t id;
-            pico_get_unique_board_id(&id);
-            // byte by byte conversion
-            for (uint8_t len = 0; len < 16; len += 2) {
-                const char *hexdig = "0123456789ABCDEF";
-                _desc_str[1 + len + 0] = hexdig[id.id[len >> 1] >> 4];
-                _desc_str[1 + len + 1] = hexdig[id.id[len >> 1] & 0x0F];
-            }
-            chr_count = 16;
+            chr_count = board_usb_get_serial(_desc_str + 1, 32);
             break;
 
         default:
