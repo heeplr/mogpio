@@ -63,7 +63,7 @@ jobs:
           cmake_args: ${{ matrix.args }}
 
       - name: Rename output file
-        run: mv build/mogpio.uf2 build/${{ matrix.filename }}
+        run: cp "build/mogpio.uf2" "build/${{ matrix.filename }}"
 
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
