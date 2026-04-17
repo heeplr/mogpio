@@ -30,6 +30,24 @@ jobs:
           - flavor: pico2-sipo-piso
             args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=sipo-piso"
             filename: mogpio-sipo-piso-pico2.uf2
+          - flavor: pico-intern-debug
+            args: "-D PLATFORM=pico -D FLAVOR=intern" -D CMAKE_BUILD_TYPE=Debug
+            filename: mogpio-intern-debug-pico.uf2
+          - flavor: pico-intern-sipo-piso-debug
+            args: "-D PLATFORM=pico -D FLAVOR=intern-sipo-piso" -D CMAKE_BUILD_TYPE=Debug
+            filename: mogpio-intern-sipo-piso-debug-pico.uf2
+          - flavor: pico-sipo-piso-debug
+            args: "-D PLATFORM=pico -D FLAVOR=sipo-piso" -D CMAKE_BUILD_TYPE=Debug
+            filename: mogpio-sipo-piso-debug-pico.uf2
+          - flavor: pico2-intern-debug
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern" -D CMAKE_BUILD_TYPE=Debug
+            filename: mogpio-intern-debug-pico2.uf2
+          - flavor: pico2-intern-sipo-piso-debug
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern-sipo-piso" -D CMAKE_BUILD_TYPE=Debug
+            filename: mogpio-intern-sipo-piso-debug-pico2.uf2
+          - flavor: pico2-sipo-piso
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=sipo-piso" -D CMAKE_BUILD_TYPE=Debug
+            filename: mogpio-sipo-piso-debug-pico2.uf2
 
     steps:
       - uses: actions/checkout@v4
