@@ -2,7 +2,7 @@
 #ifndef _PISO_H
 #define _PISO_H
 
-#define HAL_PISO_MAX_PINS     16u
+#define HAL_PISO_MAX_PINS     32u
 
 
 typedef struct {

@@ -2,7 +2,7 @@
 #ifndef _SIPO_H
 #define _SIPO_H
 
-#define HAL_SIPO_MAX_PINS     16u
+#define HAL_SIPO_MAX_PINS     32u
 
 typedef struct {
     uint8_t data_pin;     // Serial data from to the SIPO chain.
