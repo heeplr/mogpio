@@ -1,4 +1,7 @@
 
+#ifndef _PISO_H
+#define _PISO_H
+
 #define HAL_PISO_MAX_PINS     16u
 
 
@@ -16,3 +19,5 @@ typedef struct {
 
 
 extern const hal_gpio_driver_ops_t hal_gpio_piso_ops;
+
+#endif /* _PISO_H */

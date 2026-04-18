@@ -1,4 +1,6 @@
 
+#ifndef _SIPO_H
+#define _SIPO_H
 
 #define HAL_SIPO_MAX_PINS     16u
 
@@ -16,3 +18,5 @@ typedef struct {
 
 
 extern const hal_gpio_driver_ops_t hal_gpio_sipo_ops;
+
+#endif /* _SIPO_H */
