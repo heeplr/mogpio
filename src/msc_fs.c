@@ -131,6 +131,29 @@ static bool hal_pins_configured = false;
 
 /******************************************************************************/
 
+static inline void put_le16(char *p, uint16_t v) {
+  p[0] = (char)(v & 0xFF);
+  p[1] = (char)(v >> 8);
+}
+
+static inline void put_le32(char *p, uint32_t v) {
+  p[0] = (char)(v & 0xFF);
+  p[1] = (char)((v >> 8) & 0xFF);
+  p[2] = (char)((v >> 16) & 0xFF);
+  p[3] = (char)((v >> 24) & 0xFF);
+}
+
+static inline uint16_t get_le16(const uint8_t *p) {
+    return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
+}
+
+static inline uint32_t get_le32(const uint8_t *p) {
+    return (uint32_t)p[0]
+         | ((uint32_t)p[1] << 8)
+         | ((uint32_t)p[2] << 16)
+         | ((uint32_t)p[3] << 24);
+}
+
 /* generate CONFIG.TXT */
 static size_t build_config_text(char *data, size_t capacity) {
     size_t used = 0;
@@ -413,29 +436,6 @@ static bool parse_file(const char *data, size_t capacity, lineparser_t *parser) 
 
     }
     return true;
-}
-
-static inline void put_le16(char *p, uint16_t v) {
-  p[0] = (char)(v & 0xFF);
-  p[1] = (char)(v >> 8);
-}
-
-static inline void put_le32(char *p, uint32_t v) {
-  p[0] = (char)(v & 0xFF);
-  p[1] = (char)((v >> 8) & 0xFF);
-  p[2] = (char)((v >> 16) & 0xFF);
-  p[3] = (char)((v >> 24) & 0xFF);
-}
-
-static inline uint16_t get_le16(const uint8_t *p) {
-    return (uint16_t)p[0] | ((uint16_t)p[1] << 8);
-}
-
-static inline uint32_t get_le32(const uint8_t *p) {
-    return (uint32_t)p[0]
-         | ((uint32_t)p[1] << 8)
-         | ((uint32_t)p[2] << 16)
-         | ((uint32_t)p[3] << 24);
 }
 
 // FAT12 entry n starts at floor(3*n/2)
