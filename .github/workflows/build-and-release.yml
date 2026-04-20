@@ -57,7 +57,7 @@ jobs:
 
       - name: Build ${{ matrix.flavor }}
         id: build
-        uses: samyarsadat/Pico-Build-Action@v1
+        uses: samyarsadat/Pico-Build-Action@v1.3.0
         with:
           source_dir: "."
           cmake_args: ${{ matrix.args }}
