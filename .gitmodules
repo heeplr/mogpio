@@ -1,3 +1,6 @@
 [submodule "tinyusb"]
 	path = tinyusb
 	url = https://github.com/hathach/tinyusb
+[submodule "microrl-remaster"]
+	path = microrl-remaster
+	url = https://github.com/dimmykar/microrl-remaster
