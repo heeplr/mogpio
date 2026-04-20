@@ -4,6 +4,15 @@ moGPIO aims to be a firmware that provides hassle free, zero programming plug & 
 No fiddling with adapters, no SBC needed, common standard API support (on linux at least).
 
 
+# Install
+
+Copy
+* mogpio-intern-pico.uf2 to your pico.
+* mogpio-intern-pico2.uf2 to your pico2
+
+(s. [latest release](https://github.com/heeplr/mogpio/releases))
+
+
 # Usage
 
 There are three ways moGPIO exposes GPIOs:
