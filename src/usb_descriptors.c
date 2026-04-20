@@ -9,27 +9,34 @@
 
 /* interface numbers */
 enum {
-    ITF_NUM_MSC = 0,
+    ITF_NUM_CDC = 0,
+    ITF_NUM_CDC_DATA,
+    ITF_NUM_MSC,
     ITF_NUM_VENDOR,
     ITF_NUM_TOTAL
 };
 
 /* Endpoint numbers */
-#define EPNUM_MSC_OUT      0x01
-#define EPNUM_MSC_IN       0x81
+#define EPNUM_CDC_NOTIF  0x83
+#define EPNUM_CDC_OUT    0x03
+#define EPNUM_CDC_IN     0x84
 
-#define EPNUM_VENDOR_OUT   0x02
-#define EPNUM_VENDOR_IN    0x82
+#define EPNUM_MSC_OUT    0x01
+#define EPNUM_MSC_IN     0x81
+
+#define EPNUM_VENDOR_OUT 0x02
+#define EPNUM_VENDOR_IN  0x82
 
 /* string id's of usb descriptor */
 enum {
     USBD_STR_LANGUAGE = 0,
     USBD_STR_MANUFACTURER,
     USBD_STR_PRODUCT,
-    USBD_STR_SERIAL_NUMBER
+    USBD_STR_SERIAL_NUMBER,
+    USBD_STR_CDC
 };
 
-#define CONFIG_TOTAL_LEN  (TUD_CONFIG_DESC_LEN + TUD_MSC_DESC_LEN + TUD_VENDOR_DESC_LEN)
+#define CONFIG_TOTAL_LEN (TUD_CONFIG_DESC_LEN + TUD_CDC_DESC_LEN + TUD_MSC_DESC_LEN + TUD_VENDOR_DESC_LEN)
 
 
 /* string constants in descriptor */
@@ -37,6 +44,7 @@ static const char *string_desc_arr[] = {
     (const char[]){0x09, 0x04},
     "moGPIO",
     "USB GPIO bridge",
+    "moGPIO CDC terminal"
 };
 /* tmp buffer for descriptor strings */
 static uint16_t _desc_str[32];
@@ -67,7 +75,12 @@ static const tusb_desc_device_t desc_device = {
 
 static const uint8_t desc_configuration[] = {
     TUD_CONFIG_DESCRIPTOR(1, ITF_NUM_TOTAL, 0, CONFIG_TOTAL_LEN, 0x00, 100),
+    TUD_CDC_DESCRIPTOR(ITF_NUM_CDC, USBD_STR_CDC,
+                       EPNUM_CDC_NOTIF, 8,
+                       EPNUM_CDC_OUT, EPNUM_CDC_IN, 64),
+
     TUD_MSC_DESCRIPTOR(ITF_NUM_MSC, 0, EPNUM_MSC_OUT, EPNUM_MSC_IN, 64),
+
     TUD_VENDOR_DESCRIPTOR(ITF_NUM_VENDOR, 0, EPNUM_VENDOR_OUT, EPNUM_VENDOR_IN, 64),
 };
 

@@ -22,9 +22,12 @@ else()
   message(FATAL_ERROR "unknown platform: ${PLATFORM}")
 endif()
 
-# Include directories for tinyUSB config
+# Include directories for
+#  * tinyUSB config
+#  * microrl-remaster
 target_include_directories(mogpio PUBLIC
     ${CMAKE_CURRENT_LIST_DIR}/src
+    ${CMAKE_CURRENT_LIST_DIR}/microrl-remaster/src/include/microrl
 )
 
 # debug compile ?

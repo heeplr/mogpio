@@ -17,9 +17,11 @@ add_executable(mogpio)
 target_sources(mogpio PUBLIC
     src/mogpio.c
     src/usb_descriptors.c
-    src/msc_fs.c
     src/usbio.c
+    src/msc_fs.c
+    src/terminal.c
     src/hal_gpio.c
+    microrl-remaster/src/microrl/microrl.c
 )
 
 if(FLAVOR STREQUAL "intern")

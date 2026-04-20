@@ -58,7 +58,10 @@ extern "C" {
 // DFU RT does not required for this project
 #define CFG_TUD_DFU_RT                  0
 // CDC class
-#define CFG_TUD_CDC                     0
+#define CFG_TUD_CDC                     1
+#define CFG_TUD_CDC_RX_BUFSIZE          128
+#define CFG_TUD_CDC_TX_BUFSIZE          128
+
 // MSC class for mass storage support
 #define CFG_TUD_MSC                     1
 #define CFG_TUD_MSC_EP_BUFSIZE          64

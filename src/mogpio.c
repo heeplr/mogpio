@@ -1,7 +1,7 @@
 #include "logger.h"
 #include "hal_gpio.h"
 #include "msc_fs.h"
-
+#include "terminal.h"
 
 void tud_mount_cb(void) {}
 
@@ -23,13 +23,19 @@ int main(void) {
     stdio_init_all();
 #endif
 
+    /* initialize GPIO HAL */
     hal_gpio_init();
+    /* initialize mass storage interface */
     msc_fs_init();
+    /* initialize serial terminal interface */
+    terminal_init();
+    /* TinyUSB init */
     tusb_init();
 
     INFO("moGPIO initialized");
 
     while (1) {
         tud_task();
+        terminal_task();
     }
 }
