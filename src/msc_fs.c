@@ -1,11 +1,7 @@
 
-#include <ctype.h>
-#include <stdarg.h>
-#include <stdio.h>
-#include <string.h>
-
 #include "tusb.h"
 #include "hal_gpio.h"
+#include "util.h"
 #include "logger.h"
 
 
@@ -132,110 +128,8 @@ static char file_cache[FILE_COUNT][DATA_CLUSTERS * DISK_BLOCK_SIZE];
  * generated with default values) to initialize the HAL GPIO pins */
 static bool hal_pins_configured = false;
 
-#define MSC_STR_INPUT       "IN"
-#define MSC_STR_OUTPUT      "OUT"
-#define MSC_STR_PUSHPULL    "PUSHPULL"
-#define MSC_STR_UP          "UP"
-#define MSC_STR_DOWN        "DOWN"
-#define MSC_STR_DEFAULT     "DEFAULT"
 
-
-static const char *skip_ws(const char *s, const char *end) {
-    while (s < end && isspace((unsigned char)*s)) {
-        ++s;
-    }
-    return s;
-}
-
-static void rtrim_ws(char *s) {
-    size_t n = strlen(s);
-    while (n > 0 && isspace((unsigned char)s[n - 1])) {
-        s[--n] = '\0';
-    }
-}
-
-static bool parse_u32_span(const char *s, size_t len, uint32_t *out) {
-    if (len == 0) {
-        return false;
-    }
-
-    uint32_t value = 0;
-    for (size_t i = 0; i < len; ++i) {
-        unsigned char c = (unsigned char)s[i];
-        if (c < '0' || c > '9') {
-            return false;
-        }
-        uint32_t digit = (uint32_t)(c - '0');
-        if (value > (UINT32_MAX - digit) / 10u) {
-            return false;
-        }
-        value = value * 10u + digit;
-    }
-
-    *out = value;
-    return true;
-}
-
-/* return true if tokens are equal, false if not */
-static bool token_eq(const char *s, const char *tok) {
-    return strcmp(s, tok) == 0;
-}
-
-/* parse pin function token */
-static bool parse_func_token(const char *s, hal_gpio_function_t *dir) {
-    if (token_eq(s, MSC_STR_INPUT)) {
-        *dir = HAL_GPIO_FN_INPUT;
-        return true;
-    }
-    if (token_eq(s, MSC_STR_OUTPUT)) {
-        *dir = HAL_GPIO_FN_OUTPUT;
-        return true;
-    }
-    if (token_eq(s, MSC_STR_DEFAULT)) {
-        *dir = HAL_GPIO_FN_NOCHANGE;
-        return true;
-    }
-    return false;
-}
-
-/* parse pin mode token */
-static bool parse_mode_token(const char *s, hal_gpio_mode_t *out) {
-    if (token_eq(s, MSC_STR_PUSHPULL)) {
-        *out = HAL_GPIO_MODE_PUSHPULL;
-        return true;
-    }
-    if (token_eq(s, MSC_STR_UP)) {
-        *out = HAL_GPIO_MODE_PULL_UP;
-        return true;
-    }
-    if (token_eq(s, MSC_STR_DOWN)) {
-        *out = HAL_GPIO_MODE_PULL_DOWN;
-        return true;
-    }
-    if (token_eq(s, MSC_STR_DEFAULT)) {
-        *out = HAL_GPIO_MODE_NOCHANGE;
-        return true;
-    }
-    return false;
-}
-
-/* append string to buffer */
-static size_t append_fmt(char *dst, size_t cap, size_t used, const char *fmt, ...) {
-    if (used >= cap) {
-        return SIZE_MAX;
-    }
-
-    va_list ap;
-    va_start(ap, fmt);
-    int n = vsnprintf(dst + used, cap - used, fmt, ap);
-    va_end(ap);
-
-    if (n < 0 || (size_t)n >= cap - used) {
-        return SIZE_MAX;
-    }
-
-    return used + (size_t)n;
-}
+/******************************************************************************/
 
 /* generate CONFIG.TXT */
 static size_t build_config_text(char *data, size_t capacity) {
@@ -245,8 +139,8 @@ static size_t build_config_text(char *data, size_t capacity) {
     for (uint8_t bankid = 0; bankid < bankcount; ++bankid) {
         unsigned int pincount = hal_gpio_bank_pincount(bankid);
         for (unsigned int pin = 0; pin < pincount; ++pin) {
-            const char *func_str = MSC_STR_DEFAULT;
 
+            const char *func_str = hal_gpio_function_name(HAL_GPIO_FN_NOCHANGE);
             hal_gpio_function_t function;
             if (hal_gpio_get_function(bankid, pin, &function) < 0) {
                 used = append_fmt(data, capacity, used, "%u:%u=?\r\n", bankid, pin);
@@ -255,18 +149,18 @@ static size_t build_config_text(char *data, size_t capacity) {
 
             switch (function) {
                 case HAL_GPIO_FN_INPUT:
-                    func_str = MSC_STR_INPUT;
+                    func_str = hal_gpio_function_name(HAL_GPIO_FN_INPUT);
                     break;
                 case HAL_GPIO_FN_OUTPUT:
-                    func_str = MSC_STR_OUTPUT;
+                    func_str = hal_gpio_function_name(HAL_GPIO_FN_OUTPUT);
                     break;
                 case HAL_GPIO_FN_NONE:
                 default:
-                    func_str = MSC_STR_DEFAULT;
+                    func_str = hal_gpio_function_name(HAL_GPIO_FN_NOCHANGE);
                     break;
             }
 
-            const char *mode_str = MSC_STR_PUSHPULL;
+            const char *mode_str = hal_gpio_mode_name(HAL_GPIO_MODE_PUSHPULL);
             hal_gpio_mode_t mode;
             if (hal_gpio_get_mode(bankid, pin, &mode) < 0) {
                 used = append_fmt(data, capacity, used, "%u:%u=?\r\n", bankid, pin);
@@ -275,16 +169,16 @@ static size_t build_config_text(char *data, size_t capacity) {
 
             switch (mode) {
                 case HAL_GPIO_MODE_PULL_DOWN:
-                    mode_str = MSC_STR_DOWN;
+                    mode_str = hal_gpio_mode_name(HAL_GPIO_MODE_PULL_DOWN);
                     break;
                 case HAL_GPIO_MODE_PULL_UP:
-                    mode_str = MSC_STR_UP;
+                    mode_str = hal_gpio_mode_name(HAL_GPIO_MODE_PULL_UP);
                     break;
                 case HAL_GPIO_MODE_PUSHPULL:
-                    mode_str = MSC_STR_PUSHPULL;
+                    mode_str = hal_gpio_mode_name(HAL_GPIO_MODE_PUSHPULL);
                     break;
                 default:
-                    mode_str = MSC_STR_DEFAULT;
+                    mode_str = hal_gpio_mode_name(HAL_GPIO_MODE_NOCHANGE);
                     break;
             }
 
@@ -370,12 +264,12 @@ static bool parse_config_line(const char *line, size_t len) {
     }
 
     uint32_t bankid = 0;
-    if (!parse_u32_span(bank, strlen(bank), &bankid) || bankid >= hal_gpio_bankcount()) {
+    if (!parse_u32(bank, &bankid) || bankid >= hal_gpio_bankcount()) {
         return false;
     }
 
     uint32_t pin = 0;
-    if (!parse_u32_span(lhs, strlen(lhs), &pin) || pin >= hal_gpio_bank_pincount((uint8_t)bankid)) {
+    if (!parse_u32(lhs, &pin) || pin >= hal_gpio_bank_pincount((uint8_t)bankid)) {
         return false;
     }
 
@@ -386,7 +280,7 @@ static bool parse_config_line(const char *line, size_t len) {
         char *pull_s = comma + 1;
         pull_s = (char *)skip_ws(pull_s, pull_s + strlen(pull_s));
         rtrim_ws(pull_s);
-        if (*pull_s == '\0' || !parse_mode_token(pull_s, &mode)) {
+        if (*pull_s == '\0' || !parse_mode(pull_s, &mode)) {
             return false;
         }
     }
@@ -394,7 +288,7 @@ static bool parse_config_line(const char *line, size_t len) {
     hal_gpio_function_t function = HAL_GPIO_FN_NOCHANGE;
     rhs = (char *)skip_ws(rhs, rhs + strlen(rhs));
     rtrim_ws(rhs);
-    if (!parse_func_token(rhs, &function)) {
+    if (!parse_function(rhs, &function)) {
         return false;
     }
 
@@ -457,13 +351,13 @@ static bool parse_pin_line(const char *line, size_t len) {
 
     /* parse values */
     uint32_t bankid = 0;
-    if (!parse_u32_span(bank, strlen(bank), &bankid) || bankid >= hal_gpio_bankcount()) {
+    if (!parse_u32(bank, &bankid) || bankid >= hal_gpio_bankcount()) {
         ERROR("failed to parse bank: %s", bank);
         return false;
     }
 
     uint32_t pinid = 0;
-    if (!parse_u32_span(pin, strlen(pin), &pinid) || pinid >= hal_gpio_bank_pincount((uint8_t)bankid)) {
+    if (!parse_u32(pin, &pinid) || pinid >= hal_gpio_bank_pincount((uint8_t)bankid)) {
         ERROR("failed to parse pin: %s", pin);
         return false;
     }

@@ -9,204 +9,36 @@
 #include "hal_gpio_flavor.h"
 #include "microrl.h"
 #include "tusb.h"
+#include "util.h"
 
 
 /* microrl context */
 static microrl_t s_rl;
 /* flag whether CDC is ready */
 static bool s_cdc_ready = false;
+
 /* for tab-completion */
 #if MICRORL_CFG_USE_COMPLETE
+
 static char s_cmd_list[]   = "list";
 static char s_cmd_read[]   = "read";
 static char s_cmd_write[]  = "write";
 static char s_cmd_config[] = "config";
 
-static char s_fn_none[]   = "none";
-static char s_fn_input[]  = "input";
-static char s_fn_output[] = "output";
-
-static char s_mode_pull_up[]   = "pull_up";
-static char s_mode_pull_down[] = "pull_down";
-static char s_mode_pushpull[]  = "pushpull";
-
 static char s_empty[] = "";
 
 static char *const s_command_choices[] = {
-    s_cmd_list, s_cmd_read, s_cmd_write, s_cmd_config, NULL
+    s_cmd_list, s_cmd_read, s_cmd_write, s_cmd_config, "help", "?", NULL
 };
-
-static char *const s_function_choices[] = {
-    s_fn_none, s_fn_input, s_fn_output, NULL
-};
-
-static char *const s_mode_choices[] = {
-    s_mode_pull_up, s_mode_pull_down, s_mode_pushpull, NULL
-};
+static const char *s_function_choices[HAL_GPIO_FN_MAX + 1];
+static const char *s_mode_choices[HAL_GPIO_MODE_MAX + 1];
 
 static char *const s_no_completion[] = {
     s_empty, NULL
 };
 
-static char *s_complete_matches[8];
+static const char *s_complete_matches[8];
 #endif
-
-/* return printable name of HAL_GPIO_FN_* */
-static const char *function_name(hal_gpio_function_t fn)
-{
-    switch (fn) {
-    case HAL_GPIO_FN_NONE:    return "none";
-    case HAL_GPIO_FN_INPUT:   return "input";
-    case HAL_GPIO_FN_OUTPUT:  return "output";
-    case HAL_GPIO_FN_NOCHANGE:return "nochange";
-    default:                  return "unknown";
-    }
-}
-
-/* return printable name of HAL_GPIO_MODE_* */
-static const char *mode_name(hal_gpio_mode_t mode)
-{
-    switch (mode) {
-    case HAL_GPIO_MODE_PULL_UP:    return "pull_up";
-    case HAL_GPIO_MODE_PULL_DOWN:  return "pull_down";
-    case HAL_GPIO_MODE_PUSHPULL:   return "pushpull";
-    case HAL_GPIO_MODE_NOCHANGE:   return "nochange";
-    default:                       return "unknown";
-    }
-}
-
-static bool parse_u8(const char *s, uint8_t *out)
-{
-    char *end = NULL;
-    long v;
-
-    if (s == NULL || out == NULL || *s == '\0') {
-        return false;
-    }
-
-    v = strtol(s, &end, 10);
-    if (end == s || *end != '\0' || v < 0 || v > 255) {
-        return false;
-    }
-
-    *out = (uint8_t)v;
-    return true;
-}
-
-static bool parse_bank_pin(const char *s, uint8_t *bank, uint8_t *pin)
-{
-    const char *colon;
-    char bank_buf[8];
-    char pin_buf[8];
-
-    if (s == NULL || bank == NULL || pin == NULL) {
-        return false;
-    }
-
-    colon = strchr(s, ':');
-    if (colon == NULL) {
-        return false;
-    }
-
-    if ((size_t)(colon - s) >= sizeof(bank_buf)) {
-        return false;
-    }
-
-    if (strlen(colon + 1) >= sizeof(pin_buf)) {
-        return false;
-    }
-
-    memcpy(bank_buf, s, (size_t)(colon - s));
-    bank_buf[colon - s] = '\0';
-    strcpy(pin_buf, colon + 1);
-
-    return parse_u8(bank_buf, bank) && parse_u8(pin_buf, pin);
-}
-
-static bool parse_value01(const char *s, bool *value)
-{
-    if (s == NULL || value == NULL) {
-        return false;
-    }
-
-    if (strcmp(s, "0") == 0 || strcmp(s, "low") == 0 || strcmp(s, "off") == 0) {
-        *value = false;
-        return true;
-    }
-
-    if (strcmp(s, "1") == 0 || strcmp(s, "high") == 0 || strcmp(s, "on") == 0) {
-        *value = true;
-        return true;
-    }
-
-    return false;
-}
-
-static bool parse_function(const char *s, hal_gpio_function_t *fn)
-{
-    long v;
-    char *end = NULL;
-
-    if (s == NULL || fn == NULL) {
-        return false;
-    }
-
-    if (strcmp(s, "none") == 0) {
-        *fn = HAL_GPIO_FN_NONE;
-        return true;
-    }
-
-    if (strcmp(s, "input") == 0) {
-        *fn = HAL_GPIO_FN_INPUT;
-        return true;
-    }
-
-    if (strcmp(s, "output") == 0) {
-        *fn = HAL_GPIO_FN_OUTPUT;
-        return true;
-    }
-
-    v = strtol(s, &end, 10);
-    if (end != s && *end == '\0' && v >= 0 && v <= 2) {
-        *fn = (hal_gpio_function_t)v;
-        return true;
-    }
-
-    return false;
-}
-
-static bool parse_mode(const char *s, hal_gpio_mode_t *mode)
-{
-    long v;
-    char *end = NULL;
-
-    if (s == NULL || mode == NULL) {
-        return false;
-    }
-
-    if (strcmp(s, "pull_up") == 0) {
-        *mode = HAL_GPIO_MODE_PULL_UP;
-        return true;
-    }
-
-    if (strcmp(s, "pull_down") == 0) {
-        *mode = HAL_GPIO_MODE_PULL_DOWN;
-        return true;
-    }
-
-    if (strcmp(s, "pushpull") == 0) {
-        *mode = HAL_GPIO_MODE_PUSHPULL;
-        return true;
-    }
-
-    v = strtol(s, &end, 10);
-    if (end != s && *end == '\0' && v >= 0 && v <= 2) {
-        *mode = (hal_gpio_mode_t)v;
-        return true;
-    }
-
-    return false;
-}
 
 static void print_usage(void)
 {
@@ -247,8 +79,8 @@ static void print_list(void)
                            (unsigned)bank->bank_id,
                            pin,
                            (rc_val == HAL_GPIO_OK) ? (value ? "1" : "0") : "?",
-                           (rc_fn == HAL_GPIO_OK) ? function_name(fn) : "?",
-                           (rc_md == HAL_GPIO_OK) ? mode_name(mode) : "?");
+                           (rc_fn == HAL_GPIO_OK) ? hal_gpio_function_name(fn) : "?",
+                           (rc_md == HAL_GPIO_OK) ? hal_gpio_mode_name(mode) : "?");
 
             if (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK || rc_md != HAL_GPIO_OK) {
                 terminal_write("  [");
@@ -318,12 +150,12 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
         return 0;
     }
 
-    if (strcmp(argv[0], "list") == 0) {
+    if (token_eq(argv[0], "list")) {
         print_list();
         return 0;
     }
 
-    if (strcmp(argv[0], "read") == 0) {
+    if (token_eq(argv[0], "read")) {
         if (argc != 2 || !parse_bank_pin(argv[1], &bank, &pin)) {
             print_usage();
             return 1;
@@ -333,7 +165,7 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
         return 0;
     }
 
-    if (strcmp(argv[0], "write") == 0) {
+    if (token_eq(argv[0], "write")) {
         bool value = false;
 
         if (argc != 3 || !parse_bank_pin(argv[1], &bank, &pin) || !parse_value01(argv[2], &value)) {
@@ -345,7 +177,7 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
         return 0;
     }
 
-    if (strcmp(argv[0], "config") == 0) {
+    if (token_eq(argv[0], "config")) {
         hal_gpio_function_t fn;
         hal_gpio_mode_t mode = HAL_GPIO_MODE_NOCHANGE;
 
@@ -444,7 +276,7 @@ static int terminal_out(struct microrl *mrl, const char *str)
 
 #if MICRORL_CFG_USE_COMPLETE
 /* return all matches from a list of choices for an incomplete prefix string */
-static char **terminal_complete_prefix(char *const *choices, const char *prefix)
+static char **terminal_complete_prefix(const char * const* choices, const char *prefix)
 {
     size_t prefix_len = strlen(prefix);
     size_t i;
@@ -461,7 +293,7 @@ static char **terminal_complete_prefix(char *const *choices, const char *prefix)
     }
 
     s_complete_matches[n] = NULL;
-    return s_complete_matches;
+    return (char **) s_complete_matches;
 }
 
 /* process tab-press for string completion */
@@ -471,11 +303,11 @@ static char **terminal_complete(struct microrl *mrl, int argc, const char * cons
 
     /* first command after prompt ? */
     if (argc <= 1) {
-        return terminal_complete_prefix(s_command_choices, argv[0] != NULL ? argv[0] : "");
+        return terminal_complete_prefix((const char * const* ) s_command_choices, argv[0] != NULL ? argv[0] : "");
     }
 
     /* argument to some command */
-    if (strcmp(argv[0], s_cmd_config) == 0) {
+    if (token_eq(argv[0], s_cmd_config)) {
         /* pin function */
         if (argc == 3) {
             return terminal_complete_prefix(s_function_choices, argv[2] != NULL ? argv[2] : "");
@@ -495,9 +327,22 @@ static char **terminal_complete(struct microrl *mrl, int argc, const char * cons
 /* initialize microrl */
 void terminal_init(void)
 {
-    (void)microrl_init(&s_rl, terminal_out, terminal_execute);
+    microrl_init(&s_rl, terminal_out, terminal_execute);
 
 #if MICRORL_CFG_USE_COMPLETE
-    (void)microrl_set_complete_callback(&s_rl, terminal_complete);
+    /* initialize function string choices */
+    hal_gpio_function_t f;
+    for(f = 0; f < HAL_GPIO_FN_MAX; f++) {
+        s_function_choices[f] = hal_gpio_function_name(f);
+    }
+    s_function_choices[f] = NULL;
+    /* initialize mode string choices */
+    hal_gpio_mode_t m;
+    for(m = 0; m < HAL_GPIO_MODE_MAX; m++) {
+        s_mode_choices[m] = hal_gpio_mode_name(m);
+    }
+    s_mode_choices[m] = NULL;
+
+    microrl_set_complete_callback(&s_rl, terminal_complete);
 #endif
 }

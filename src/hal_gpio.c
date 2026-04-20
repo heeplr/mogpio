@@ -207,3 +207,27 @@ int hal_gpio_get_mode(uint8_t bankid, uint8_t pin, hal_gpio_mode_t *mode) {
 
     return bank->ops->get_mode(bank->ctx, pin, mode);
 }
+
+/* return printable name of HAL_GPIO_FN_* */
+const char *hal_gpio_function_name(hal_gpio_function_t fn)
+{
+    switch (fn) {
+    case HAL_GPIO_FN_NONE:    return "NONE";
+    case HAL_GPIO_FN_INPUT:   return "INPUT";
+    case HAL_GPIO_FN_OUTPUT:  return "OUTPUT";
+    case HAL_GPIO_FN_NOCHANGE:return "NOCHANGE";
+    default:                  return "UNKNOWN";
+    }
+}
+
+/* return printable name of HAL_GPIO_MODE_* */
+const char *hal_gpio_mode_name(hal_gpio_mode_t mode)
+{
+    switch (mode) {
+    case HAL_GPIO_MODE_PULL_UP:    return "PULLUP";
+    case HAL_GPIO_MODE_PULL_DOWN:  return "PULLDOWN";
+    case HAL_GPIO_MODE_PUSHPULL:   return "PUSHPULL";
+    case HAL_GPIO_MODE_NOCHANGE:   return "NOCHANGE";
+    default:                       return "UNKNOWN";
+    }
+}

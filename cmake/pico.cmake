@@ -21,6 +21,7 @@ target_sources(mogpio PUBLIC
     src/msc_fs.c
     src/terminal.c
     src/hal_gpio.c
+    src/util.c
     microrl-remaster/src/microrl/microrl.c
 )
 

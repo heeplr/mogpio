@@ -20,18 +20,22 @@ extern "C" {
  * output.
  */
 typedef enum {
-    HAL_GPIO_FN_NOCHANGE = -1,
-    HAL_GPIO_FN_NONE = 0,
+    HAL_GPIO_FN_MIN = -1,
+    HAL_GPIO_FN_NOCHANGE = 0,
+    HAL_GPIO_FN_NONE,
     HAL_GPIO_FN_INPUT,
     HAL_GPIO_FN_OUTPUT,
+    HAL_GPIO_FN_MAX
 } hal_gpio_function_t;
 
 /* The mode describes how the pin is biased or driven. */
 typedef enum {
-    HAL_GPIO_MODE_NOCHANGE = -1,
-    HAL_GPIO_MODE_PULL_UP = 0,
+    HAL_GPIO_MODE_MIN = -1,
+    HAL_GPIO_MODE_NOCHANGE = 0,
+    HAL_GPIO_MODE_PULL_UP,
     HAL_GPIO_MODE_PULL_DOWN,
     HAL_GPIO_MODE_PUSHPULL,
+    HAL_GPIO_MODE_MAX
 } hal_gpio_mode_t;
 
 /* codes for error handling */
@@ -45,19 +49,23 @@ enum {
 };
 
 
-unsigned int hal_gpio_bankcount(void);
-unsigned int hal_gpio_bank_pincount(uint8_t bankid);
-unsigned int hal_gpio_pincount(void);
-
 int hal_gpio_init(void);
 int hal_gpio_deinit(void);
 int hal_gpio_pin_config(uint8_t bankid, uint8_t pin,
                         hal_gpio_function_t function,
                         hal_gpio_mode_t mode);
+
 int hal_gpio_read(uint8_t bankid, uint8_t pin, bool *value);
 int hal_gpio_write(uint8_t bankid, uint8_t pin, bool value);
 int hal_gpio_get_function(uint8_t bankid, uint8_t pin, hal_gpio_function_t *function);
 int hal_gpio_get_mode(uint8_t bankid, uint8_t pin, hal_gpio_mode_t *mode);
+
+const char *hal_gpio_function_name(hal_gpio_function_t fn);
+const char *hal_gpio_mode_name(hal_gpio_mode_t mode);
+
+unsigned int hal_gpio_bankcount(void);
+unsigned int hal_gpio_bank_pincount(uint8_t bankid);
+unsigned int hal_gpio_pincount(void);
 
 #ifdef __cplusplus
 }
