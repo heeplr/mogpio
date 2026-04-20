@@ -66,7 +66,7 @@ static char *const s_no_completion[] = {
 static const char *s_complete_matches[8];
 #endif
 
-static void print_usage(void)
+static void cmd_usage(void)
 {
     terminal_write("\r\n"
                    "Commands:\r\n"
@@ -78,7 +78,7 @@ static void print_usage(void)
                    "    mode: pull_up|pull_down|pushpull\r\n");
 }
 
-static void print_list(void)
+static void cmd_list(void)
 {
     size_t bank_index;
 
@@ -127,7 +127,7 @@ static void print_list(void)
     }
 }
 
-static void print_read(uint8_t bank, uint8_t pin)
+static void cmd_read(uint8_t bank, uint8_t pin)
 {
     bool value = false;
     int rc = hal_gpio_read(bank, pin, &value);
@@ -140,7 +140,7 @@ static void print_read(uint8_t bank, uint8_t pin)
     terminal_write("%u\r\n", value ? 1u : 0u);
 }
 
-static void print_write(uint8_t bank, uint8_t pin, bool value)
+static void cmd_write(uint8_t bank, uint8_t pin, bool value)
 {
     int rc = hal_gpio_write(bank, pin, value);
 
@@ -152,7 +152,7 @@ static void print_write(uint8_t bank, uint8_t pin, bool value)
     terminal_write("OK\r\n");
 }
 
-static void print_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gpio_mode_t mode)
+static void cmd_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gpio_mode_t mode)
 {
     int rc = hal_gpio_pin_config(bank, pin, fn, mode);
 
@@ -177,17 +177,17 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
     }
 
     if (token_eq(argv[0], "list")) {
-        print_list();
+        cmd_list();
         return 0;
     }
 
     if (token_eq(argv[0], "read")) {
         if (argc != 2 || !parse_bank_pin(argv[1], &bank, &pin)) {
-            print_usage();
+            cmd_usage();
             return 1;
         }
 
-        print_read(bank, pin);
+        cmd_read(bank, pin);
         return 0;
     }
 
@@ -195,11 +195,11 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
         bool value = false;
 
         if (argc != 3 || !parse_bank_pin(argv[1], &bank, &pin) || !parse_value01(argv[2], &value)) {
-            print_usage();
+            cmd_usage();
             return 1;
         }
 
-        print_write(bank, pin, value);
+        cmd_write(bank, pin, value);
         return 0;
     }
 
@@ -208,20 +208,20 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
         hal_gpio_mode_t mode = HAL_GPIO_MODE_NOCHANGE;
 
         if (argc < 3 || argc > 4 || !parse_bank_pin(argv[1], &bank, &pin) || !parse_function(argv[2], &fn)) {
-            print_usage();
+            cmd_usage();
             return 1;
         }
 
         if (argc == 4 && !parse_mode(argv[3], &mode)) {
-            print_usage();
+            cmd_usage();
             return 1;
         }
 
-        print_config(bank, pin, fn, mode);
+        cmd_config(bank, pin, fn, mode);
         return 0;
     }
 
-    print_usage();
+    cmd_usage();
     return 1;
 }
 
@@ -332,7 +332,7 @@ static char **terminal_complete(struct microrl *mrl, int argc, const char * cons
         return terminal_complete_prefix((const char * const* ) s_command_choices, argv[0] != NULL ? argv[0] : "");
     }
 
-    /* argument to some command */
+    /* argument to config command */
     if (token_eq(argv[0], s_cmd_config)) {
         /* pin function */
         if (argc == 3) {
