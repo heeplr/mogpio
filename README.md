@@ -1,7 +1,14 @@
 
 
-moGPIO aims to be a firmware that provides hassle free, zero programming plug & play GPIO via USB.
-No fiddling with adapters, no SBC needed, common standard API support (on linux at least).
+moGPIO provides plug & play GPIO via USB
+
+# Features
+
+* access GPIOs using
+  * standard libgpiod API (usbio)
+  * reading/writing files on emulated mass storage device
+  * interactive terminal via serial port
+* terminal with autocompletion
 
 
 # Install
@@ -13,14 +20,17 @@ Copy
 (s. [latest release](https://github.com/heeplr/mogpio/releases))
 
 
+
 # Usage
 
 There are three ways moGPIO exposes GPIOs:
 
+
+
 ## 1. USBIO Protocol
 
 Just plug into your linux box and your moGPIO device will register as new
-`/dev/gpiochipX` using the `usbio` driver. 
+`/dev/gpiochipX` using the `usbio` driver.
 You can use `gpiodetect`, `gpioinfo`, `gpioget`, `gpioset` commands like with any other /dev/gpiochipX.
 
 Of yourse you can use the standard libgpiod API aswell.
@@ -28,9 +38,10 @@ Of yourse you can use the standard libgpiod API aswell.
 NOTE: `gpiomon` command will fail, as interrupts are not supported in usbio, yet.
 
 
+
 ## 2. CDC terminal interface
 
-moGPIO provides a serial device you can connect to access a terminal. 
+moGPIO provides a serial device you can connect to access a terminal.
 Available commands:
 
 * `?` or `help` print usage information
@@ -47,6 +58,7 @@ The terminal uses [microrl-remaster](https://github.com/dimmykar/microrl-remaste
 * ...
 
 
+
 ## 3. Mass Storage Class Device
 
 moGPIO provides a small FAT16 partition with `PINS.TXT` and `CONFIG.TXT` files.
@@ -54,6 +66,7 @@ moGPIO provides a small FAT16 partition with `PINS.TXT` and `CONFIG.TXT` files.
 The files contents represent the state at time of read. Writes will affect the
 state on actual write. (Some OS' cache agressively and won't write until
 eject/unmount or explicit flush.)
+
 
 ### PINS.TXT
 
@@ -72,6 +85,7 @@ Example:
 0:6=0
 0:7=0
 ```
+
 
 ### CONFIG.TXT
 
@@ -114,6 +128,7 @@ Currently there are 3 flavors:
 * intern (internal GPIOs of platform)
 * sipo-piso (bit-bang serial shift registers)
 * intern-sipo-piso (combination of the above)
+
 
 
 # TODO
