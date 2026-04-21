@@ -83,29 +83,28 @@ static void cmd_usage(void)
 
 static void cmd_list(void)
 {
-    size_t bank_index;
-
     terminal_write("\r\nGPIOs:\r\n");
 
-    for (bank_index = 0; bank_index < g_hal_gpio_flavor.bank_count; ++bank_index) {
-        const hal_gpio_bank_t *bank = &g_hal_gpio_flavor.banks[bank_index];
-        unsigned int pin;
+    size_t bankcount = hal_gpio_bankcount();
+    for (uint8_t bankid = 0; bankid < bankcount; ++bankid) {
 
+        unsigned int pincount = hal_gpio_bank_pincount(bankid);
+        const char *name = hal_gpio_bank_name(bankid);
         terminal_write("  Bank %u (%s), %u pins\r\n",
-                       (unsigned)bank->bank_id,
-                       bank->name != NULL ? bank->name : "(unnamed)",
-                       (unsigned)bank->pin_count);
+                       bankid,
+                       name != NULL ? name : "(unnamed)",
+                       pincount);
 
-        for (pin = 0; pin < bank->pin_count; ++pin) {
-            bool value = false;
+        for (unsigned int pin = 0; pin < pincount; ++pin) {
             hal_gpio_function_t fn = HAL_GPIO_FN_NOCHANGE;
             hal_gpio_mode_t mode = HAL_GPIO_MODE_NOCHANGE;
-            int rc_val = hal_gpio_read(bank->bank_id, (uint8_t)pin, &value);
-            int rc_fn = hal_gpio_get_function(bank->bank_id, (uint8_t)pin, &fn);
-            int rc_md = hal_gpio_get_mode(bank->bank_id, (uint8_t)pin, &mode);
+            bool value = false;
+            int rc_val = hal_gpio_read(bankid, (uint8_t) pin, &value);
+            int rc_fn = hal_gpio_get_function(bankid, (uint8_t) pin, &fn);
+            int rc_md = hal_gpio_get_mode(bankid, (uint8_t) pin, &mode);
 
             terminal_write("    %u:%u  value=%s  function=%s  mode=%s",
-                           (unsigned)bank->bank_id,
+                           (unsigned) bankid,
                            pin,
                            (rc_val == HAL_GPIO_OK) ? (value ? "1" : "0") : "?",
                            (rc_fn == HAL_GPIO_OK) ? hal_gpio_function_name(fn) : "?",
