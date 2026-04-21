@@ -4,12 +4,14 @@ moGPIO provides plug & play GPIO via USB
 
 # Features
 
+* currently supports up to 32 * 32 GPIO pins[^1] per device (more possible)
 * access GPIOs using
   * standard libgpiod API (usbio)
   * reading/writing files on emulated mass storage device
   * interactive terminal via serial port
 * terminal with autocompletion
 
+[^1]: As the time of writing, the usbio protocol supports 5 * 32 GPIO max. Any more pins can be controlled only from the interactive terminal or via the mass storage mode. Also limiting to 32 banks is a memory footprint compromise and can be increased. (Please [open an issue](https://github.com/heeplr/mogpio/issues) if you need more).
 
 # Install
 
