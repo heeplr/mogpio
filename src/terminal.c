@@ -53,17 +53,20 @@ static char s_cmd_config[] = "config";
 
 static char s_empty[] = "";
 
-static char *const s_command_choices[] = {
+static const char *const s_command_choices[] = {
     s_cmd_list, s_cmd_read, s_cmd_write, s_cmd_config, "help", "?", NULL
 };
+static const char *const s_pinval_choices[] = {
+    "0", "1", NULL
+};
+static const char *s_bank_pin_choices[HAL_GPIO_BANKS_MAX * HAL_GPIO_PINS_MAX + 1];
 static const char *s_function_choices[HAL_GPIO_FN_MAX + 1];
 static const char *s_mode_choices[HAL_GPIO_MODE_MAX + 1];
-
 static char *const s_no_completion[] = {
     s_empty, NULL
 };
 
-static const char *s_complete_matches[8];
+static const char *s_complete_matches[64];
 #endif
 
 static void cmd_usage(void)
@@ -309,7 +312,7 @@ static char **terminal_complete_prefix(const char * const* choices, const char *
     size_t n = 0;
 
     for (i = 0; choices[i] != NULL && n < (MICRORL_ARRAYSIZE(s_complete_matches) - 1u); ++i) {
-        if (strncmp(choices[i], prefix, prefix_len) == 0) {
+        if (strncasecmp(choices[i], prefix, prefix_len) == 0) {
             s_complete_matches[n++] = choices[i];
         }
     }
@@ -329,11 +332,36 @@ static char **terminal_complete(struct microrl *mrl, int argc, const char * cons
 
     /* first command after prompt ? */
     if (argc <= 1) {
-        return terminal_complete_prefix((const char * const* ) s_command_choices, argv[0] != NULL ? argv[0] : "");
+        return terminal_complete_prefix(s_command_choices, argv[0] != NULL ? argv[0] : "");
+    }
+
+    /* argument to read command */
+    if (token_eq(argv[0], s_cmd_read)) {
+        /* bank:id */
+        if (argc == 2) {
+            return terminal_complete_prefix(s_bank_pin_choices, argv[1] != NULL ? argv[1] : "");
+        }
+    }
+
+    /* argument to write command */
+    if (token_eq(argv[0], s_cmd_write)) {
+        /* bank:id */
+        if (argc == 2) {
+            return terminal_complete_prefix(s_bank_pin_choices, argv[1] != NULL ? argv[1] : "");
+        }
+        /* value */
+        if (argc == 3) {
+            return terminal_complete_prefix(s_pinval_choices, argv[2] != NULL ? argv[2] : "");
+        }
     }
 
     /* argument to config command */
     if (token_eq(argv[0], s_cmd_config)) {
+        /* bank:id */
+        if (argc == 2) {
+            return terminal_complete_prefix(s_bank_pin_choices, argv[1] != NULL ? argv[1] : "");
+        }
+
         /* pin function */
         if (argc == 3) {
             return terminal_complete_prefix(s_function_choices, argv[2] != NULL ? argv[2] : "");
@@ -356,6 +384,27 @@ void terminal_init(void)
     microrl_init(&s_rl, terminal_out, terminal_execute);
 
 #if MICRORL_CFG_USE_COMPLETE
+    /* initialize bank pin choices */
+    static char bankpins[512];
+    static size_t space_left = sizeof(bankpins);
+    static char *s = bankpins;
+    static size_t completions = 0;
+    /* walk all banks */
+    for(uint8_t b = 0; b < hal_gpio_bankcount(); b++) {
+        /* walk all pins */
+        for(uint8_t p = 0; p < hal_gpio_bank_pincount(b); p++) {
+            if(space_left > 0) {
+                int written = snprintf(s, space_left, "%d:%d", b, p);
+                space_left -= ((size_t) written + 1);
+                /* store this completion */
+                s_bank_pin_choices[completions] = s;
+                /* next completion */
+                completions++;
+                /* next buffer += written_string + \0 */
+                s += written+1;
+            }
+        }
+    }
     /* initialize function string choices */
     hal_gpio_function_t f;
     for(f = 0; f < HAL_GPIO_FN_MAX; f++) {

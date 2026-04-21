@@ -41,6 +41,10 @@
 extern "C" {
 #endif
 
+/* absolute maxima */
+#define HAL_GPIO_BANKS_MAX  32
+#define HAL_GPIO_PINS_MAX   32
+
 /*
  * A GPIO can be left unassigned (NONE), configured as input or configured as
  * output.
