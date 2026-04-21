@@ -92,6 +92,7 @@ int hal_gpio_get_mode(uint8_t bankid, uint8_t pin, hal_gpio_mode_t *mode);
 
 const char *hal_gpio_function_name(hal_gpio_function_t fn);
 const char *hal_gpio_mode_name(hal_gpio_mode_t mode);
+const char *hal_gpio_bank_name(uint8_t bankid);
 
 unsigned int hal_gpio_bankcount(void);
 unsigned int hal_gpio_bank_pincount(uint8_t bankid);

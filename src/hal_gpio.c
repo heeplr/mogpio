@@ -234,6 +234,15 @@ int hal_gpio_get_mode(uint8_t bankid, uint8_t pin, hal_gpio_mode_t *mode) {
     return bank->ops->get_mode(bank->ctx, pin, mode);
 }
 
+/* return printable name of bank */
+const char *hal_gpio_bank_name(uint8_t bankid) {
+    const hal_gpio_bank_t *bank = hal_find_bank(bankid);
+    if(!bank)
+        return NULL;
+
+    return bank->name;
+}
+
 /* return printable name of HAL_GPIO_FN_* */
 const char *hal_gpio_function_name(hal_gpio_function_t fn)
 {
