@@ -135,7 +135,9 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
 
             bank banks[USBIO_MAX_GPIOBANKS];
 
-            for(uint8_t id=0; id < hal_gpio_bankcount(); id++) {
+            for(uint8_t id=0;
+                    id < hal_gpio_bankcount() && id < USBIO_MAX_GPIOBANKS;
+                    id++) {
                 banks[id].id = id;
                 banks[id].pins = hal_gpio_bank_pincount(id);
                 banks[id].bmap = pin_bmap(id);
