@@ -72,16 +72,15 @@ static void sipo_flush_shadow(hal_gpio_sipo_ctx_t *ctx)
      * a single logical pin at a time, while the driver still updates the whole
      * chain in one clean transfer.
      */
+    gpio_put(ctx->latch_pin, false);
     for (uint8_t i = 0; i < ctx->pin_count; ++i) {
+        gpio_put(ctx->clock_pin, false);
         const uint8_t src = _mapped_pin(ctx, i);
         gpio_put(ctx->data_pin, ctx->shadow_bits[src]);
-
         gpio_put(ctx->clock_pin, true);
-        gpio_put(ctx->clock_pin, false);
     }
-
     gpio_put(ctx->latch_pin, true);
-    gpio_put(ctx->latch_pin, false);
+
 }
 
 
@@ -138,6 +137,7 @@ static int sipo_pin_config(void *vctx, uint8_t pin,
     }
 
     switch (function) {
+
         case HAL_GPIO_FN_INPUT:
             return HAL_GPIO_ERR_UNSUPPORTED;
 
