@@ -71,16 +71,14 @@ static void piso_refresh_cache(hal_gpio_piso_ctx_t *ctx)
      *   2) Clock the chain and sample the serial output bit once per pin.
      *
      */
-    gpio_put(ctx->load_pin, false);
     gpio_put(ctx->load_pin, true);
-
     for (uint8_t i = 0; i < ctx->pin_count; ++i) {
+        gpio_put(ctx->clock_pin, false);
         const uint8_t dst = _mapped_pin(ctx, i);
         ctx->cached_bits[dst] = gpio_get(ctx->data_pin);
-
         gpio_put(ctx->clock_pin, true);
-        gpio_put(ctx->clock_pin, false);
     }
+    gpio_put(ctx->load_pin, false);
 }
 
 static int piso_init(void *vctx)
@@ -177,8 +175,8 @@ static int piso_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *funct
     if (rc != HAL_GPIO_OK) {
         return rc;
     }
-
-    *function = ctx->function[pin];
+    /* a PISO will always be an INPUT pin */
+    *function = HAL_GPIO_FN_INPUT;
     return HAL_GPIO_OK;
 }
 

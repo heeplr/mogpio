@@ -173,8 +173,8 @@ static int sipo_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *funct
     if (rc != HAL_GPIO_OK) {
         return rc;
     }
-
-    *function = ctx->function[pin];
+    /* a SIPO will always be an OUTPUT pin */
+    *function = HAL_GPIO_FN_OUTPUT;
     return HAL_GPIO_OK;
 }
 
