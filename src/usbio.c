@@ -231,7 +231,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             uint32_t mask = 1u << in->pin;
             bool high = (in->value & mask) != 0;
             INFO("GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
-            if(hal_gpio_write(in->bankid, in->pin, high) < 0)
+            if(hal_gpio_write(in->bankid, in->pin, high) != HAL_GPIO_OK)
                 goto _hp_error;
             break;
         }
