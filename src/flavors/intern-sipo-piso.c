@@ -39,12 +39,12 @@
 #include "hal_gpio_flavor.h"
 
 #ifdef PLATFORM_PICO
-#include "gpio/rpi_pico.h"
+#include "driver/rpi_pico.h"
 #elif PLATFORM_ESP32
-#include "gpio/esp32.h"
+#include "driver/esp32.h"
 #endif
-#include "gpio/piso.h"
-#include "gpio/sipo.h"
+#include "driver/piso.h"
+#include "driver/sipo.h"
 
 
 enum {

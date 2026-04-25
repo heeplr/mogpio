@@ -37,8 +37,8 @@
 #include "hal_gpio.h"
 #include "hal_gpio_flavor.h"
 
-#include "gpio/piso.h"
-#include "gpio/sipo.h"
+#include "driver/piso.h"
+#include "driver/sipo.h"
 
 
 enum {
@@ -49,18 +49,18 @@ enum {
 
 
 static hal_gpio_piso_ctx_t s_piso_ctx = {
-    .data_pin = 2,
-    .clock_pin = 3,
-    .load_pin = 4,
-    .pin_count = HAL_PISO_MAX_PINS,
+    .data_pin = 6,
+    .clock_pin = 7,
+    .load_pin = 8,
+    .pin_count = 16,
     .reverse_order = false,
 };
 
 static hal_gpio_sipo_ctx_t s_sipo_ctx = {
-    .data_pin = 6,
-    .clock_pin = 7,
-    .latch_pin = 8,
-    .pin_count = HAL_SIPO_MAX_PINS,
+    .data_pin = 2,
+    .clock_pin = 3,
+    .latch_pin = 4,
+    .pin_count = 16,
     .reverse_order = false,
 };
 
@@ -68,14 +68,14 @@ static const hal_gpio_bank_t s_banks[] = {
     {
         .bank_id = HAL_BANK_PISO,
         .name = "piso-input-chain",
-        .pin_count = HAL_PISO_MAX_PINS,
+        .pin_count = 16,
         .ops = &hal_gpio_piso_ops,
         .ctx = &s_piso_ctx,
     },
     {
         .bank_id = HAL_BANK_SIPO,
         .name = "sipo-output-chain",
-        .pin_count = HAL_SIPO_MAX_PINS,
+        .pin_count = 16,
         .ops = &hal_gpio_sipo_ops,
         .ctx = &s_sipo_ctx,
     },
