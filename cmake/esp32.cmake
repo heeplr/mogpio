@@ -19,24 +19,24 @@ idf_component_register(
 
 if(FLAVOR STREQUAL "intern")
     idf_component_register(
-        SRCS "src/gpio/esp32.c"
+        SRCS "src/driver/esp32.c"
              "src/boards/intern.c"
     )
     set(FLAVOR_DEFINE FLAVOR_INTERN)
 
 elseif(FLAVOR STREQUAL "intern-sipo-piso")
     idf_component_register(
-        SRCS "src/gpio/esp32.c"
-             "src/gpio/sipo.c"
-             "src/gpio/piso.c"
+        SRCS "src/driver/esp32.c"
+             "src/driver/sipo.c"
+             "src/driver/piso.c"
              "src/boards/intern-sipo-piso.c"
     )
     set(FLAVOR_DEFINE FLAVOR_INTERN_SIPO_PISO)
 
 elseif(FLAVOR STREQUAL "sipo-piso")
     idf_component_register(
-        SRCS "src/gpio/sipo.c"
-             "src/gpio/piso.c"
+        SRCS "src/driver/sipo.c"
+             "src/driver/piso.c"
              "src/boards/sipo-piso.c"
     )
     set(FLAVOR_DEFINE FLAVOR_SIPO_PISO)

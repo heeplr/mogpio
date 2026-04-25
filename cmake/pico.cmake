@@ -28,24 +28,24 @@ target_sources(mogpio PUBLIC
 if(FLAVOR STREQUAL "intern")
     set(FLAVOR_DEFINE FLAVOR_INTERN)
     target_sources(mogpio PUBLIC
-        src/gpio/rpi_pico.c
+        src/driver/rpi_pico.c
         src/flavors/intern.c
     )
 
 elseif(FLAVOR STREQUAL "intern-sipo-piso")
     set(FLAVOR_DEFINE FLAVOR_INTERN_SIPO_PISO)
     target_sources(mogpio PUBLIC
-        src/gpio/rpi_pico.c
-        src/gpio/sipo.c
-        src/gpio/piso.c
+        src/driver/rpi_pico.c
+        src/driver/sipo.c
+        src/driver/piso.c
         src/flavors/intern-sipo-piso.c
     )
 
 elseif(FLAVOR STREQUAL "sipo-piso")
     set(FLAVOR_DEFINE FLAVOR_SIPO_PISO)
     target_sources(mogpio PUBLIC
-        src/gpio/sipo.c
-        src/gpio/piso.c
+        src/driver/sipo.c
+        src/driver/piso.c
         src/flavors/sipo-piso.c
     )
 
