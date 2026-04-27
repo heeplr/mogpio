@@ -31,10 +31,10 @@
 
 
 typedef struct {
-    uint8_t data_pin;     // Serial data from the PISO chain into the Pico.
-    uint8_t clock_pin;    // Shift clock.
-    uint8_t load_pin;     // Parallel load / latch control.
-    uint8_t pin_count;    // Total number of input bits exposed.
+    size_t data_pin;     // Serial data from the PISO chain into the Pico.
+    size_t clock_pin;    // Shift clock.
+    size_t load_pin;     // Parallel load / latch control.
+    size_t pin_count;    // Total number of input bits exposed.
     bool reverse_order;   // Flip bit order if the chain is wired backwards.
 
     bool cached_bits[HAL_PISO_MAX_PINS];

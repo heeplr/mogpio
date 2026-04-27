@@ -78,25 +78,63 @@ enum {
     HAL_GPIO_ERR_STATE       = -5,  /* bank/pin is in the wrong state */
 };
 
+/*
+ * Callbacks implemented by a driver backend.
+ */
+typedef struct hal_gpio_driver_ops {
+    int (*init)(void *ctx);
+    int (*deinit)(void *ctx);
+    int (*pin_config)(void *ctx, size_t pin,
+                      hal_gpio_function_t function,
+                      hal_gpio_mode_t mode);
+    int (*read)(void *ctx, size_t pin, bool *value);
+    int (*write)(void *ctx, size_t pin, bool value);
+    int (*get_function)(void *ctx, size_t pin, hal_gpio_function_t *function);
+    int (*get_mode)(void *ctx, size_t pin, hal_gpio_mode_t *mode);
+} hal_gpio_driver_ops_t;
+
+/*
+ * One driver instance.
+ *
+ * The HAL keeps the driver callbacks and the runtime context together.
+ */
+typedef struct hal_gpio_driver {
+    const hal_gpio_driver_ops_t *ops;
+    void *ctx;
+    size_t pin_count;
+} hal_gpio_driver_t;
+
+/*
+ * A bank is a logical block of GPIOs.
+ *
+ * Bank descriptors no longer carry driver state.
+ */
+typedef struct {
+    size_t bank_id;
+    const char *name;
+    size_t pin_count;
+} hal_gpio_bank_t;
+
+
 
 int hal_gpio_init(void);
 int hal_gpio_deinit(void);
-int hal_gpio_pin_config(uint8_t bankid, uint8_t pin,
+int hal_gpio_pin_config(size_t bankid, size_t pin,
                         hal_gpio_function_t function,
                         hal_gpio_mode_t mode);
 
-int hal_gpio_read(uint8_t bankid, uint8_t pin, bool *value);
-int hal_gpio_write(uint8_t bankid, uint8_t pin, bool value);
-int hal_gpio_get_function(uint8_t bankid, uint8_t pin, hal_gpio_function_t *function);
-int hal_gpio_get_mode(uint8_t bankid, uint8_t pin, hal_gpio_mode_t *mode);
+int hal_gpio_read(size_t bankid, size_t pin, bool *value);
+int hal_gpio_write(size_t bankid, size_t pin, bool value);
+int hal_gpio_get_function(size_t bankid, size_t pin, hal_gpio_function_t *function);
+int hal_gpio_get_mode(size_t bankid, size_t pin, hal_gpio_mode_t *mode);
 
 const char *hal_gpio_function_name(hal_gpio_function_t fn);
 const char *hal_gpio_mode_name(hal_gpio_mode_t mode);
-const char *hal_gpio_bank_name(uint8_t bankid);
+const char *hal_gpio_bank_name(size_t bankid);
 
-unsigned int hal_gpio_bankcount(void);
-unsigned int hal_gpio_bank_pincount(uint8_t bankid);
-unsigned int hal_gpio_pincount(void);
+size_t hal_gpio_bankcount(void);
+size_t hal_gpio_bank_pincount(size_t bankid);
+size_t hal_gpio_pincount(void);
 
 #ifdef __cplusplus
 }

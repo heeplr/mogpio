@@ -35,7 +35,7 @@
 #include <string.h>
 
 #include "hal_gpio.h"
-#include "hal_gpio_flavor.h"
+#include "hal_gpio_layout.h"
 #include "piso.h"
 
 #include "pico/stdlib.h"
@@ -122,7 +122,7 @@ static int piso_deinit(void *vctx)
     return HAL_GPIO_OK;
 }
 
-static int piso_pin_config(void *vctx, uint8_t pin,
+static int piso_pin_config(void *vctx, size_t pin,
                            hal_gpio_function_t function,
                            hal_gpio_mode_t mode)
 {
@@ -168,7 +168,7 @@ static int piso_pin_config(void *vctx, uint8_t pin,
     return HAL_GPIO_OK;
 }
 
-static int piso_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *function)
+static int piso_get_function(void *vctx, size_t pin, hal_gpio_function_t *function)
 {
     hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -180,7 +180,7 @@ static int piso_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *funct
     return HAL_GPIO_OK;
 }
 
-static int piso_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
+static int piso_get_mode(void *vctx, size_t pin, hal_gpio_mode_t *mode)
 {
     hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -192,7 +192,7 @@ static int piso_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
     return HAL_GPIO_OK;
 }
 
-static int piso_read(void *vctx, uint8_t pin, bool *value)
+static int piso_read(void *vctx, size_t pin, bool *value)
 {
     hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -210,7 +210,7 @@ static int piso_read(void *vctx, uint8_t pin, bool *value)
     return HAL_GPIO_OK;
 }
 
-static int piso_write(void *vctx, uint8_t pin, bool value)
+static int piso_write(void *vctx, size_t pin, bool value)
 {
     (void)vctx;
     (void)pin;

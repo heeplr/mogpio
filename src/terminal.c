@@ -32,7 +32,7 @@
 #include <string.h>
 
 #include "hal_gpio.h"
-#include "hal_gpio_flavor.h"
+#include "hal_gpio_layout.h"
 #include "microrl.h"
 #include "tusb.h"
 #include "util.h"

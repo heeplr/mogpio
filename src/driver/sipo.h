@@ -30,10 +30,10 @@
 #define HAL_SIPO_MAX_PINS     32u
 
 typedef struct {
-    uint8_t data_pin;     // Serial data from to the SIPO chain.
-    uint8_t clock_pin;    // Shift clock.
-    uint8_t latch_pin;    // Storage-register latch.
-    uint8_t pin_count;    // Total number of output bits exposed.
+    size_t data_pin;     // Serial data from to the SIPO chain.
+    size_t clock_pin;    // Shift clock.
+    size_t latch_pin;    // Storage-register latch.
+    size_t pin_count;    // Total number of output bits exposed.
     bool reverse_order;   // Flip bit order if the chain is wired backwards.
 
     bool shadow_bits[HAL_SIPO_MAX_PINS];

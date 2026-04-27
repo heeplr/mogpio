@@ -25,37 +25,37 @@ target_sources(mogpio PUBLIC
     microrl-remaster/src/microrl/microrl.c
 )
 
-if(FLAVOR STREQUAL "intern")
-    set(FLAVOR_DEFINE FLAVOR_INTERN)
+if(LAYOUT STREQUAL "intern")
+    set(LAYOUT_DEFINE LAYOUT_INTERN)
     target_sources(mogpio PUBLIC
         src/driver/rpi_pico.c
-        src/flavors/intern.c
+        src/layouts/intern.c
     )
 
-elseif(FLAVOR STREQUAL "intern-sipo-piso")
-    set(FLAVOR_DEFINE FLAVOR_INTERN_SIPO_PISO)
+elseif(LAYOUT STREQUAL "intern-sipo-piso")
+    set(LAYOUT_DEFINE LAYOUT_INTERN_SIPO_PISO)
     target_sources(mogpio PUBLIC
         src/driver/rpi_pico.c
         src/driver/sipo.c
         src/driver/piso.c
-        src/flavors/intern-sipo-piso.c
+        src/layouts/intern-sipo-piso.c
     )
 
-elseif(FLAVOR STREQUAL "sipo-piso")
-    set(FLAVOR_DEFINE FLAVOR_SIPO_PISO)
+elseif(LAYOUT STREQUAL "sipo-piso")
+    set(LAYOUT_DEFINE LAYOUT_SIPO_PISO)
     target_sources(mogpio PUBLIC
         src/driver/sipo.c
         src/driver/piso.c
-        src/flavors/sipo-piso.c
+        src/layouts/sipo-piso.c
     )
 
 else()
-    message(FATAL_ERROR "platform ${PLATFORM} doesn't support flavor ${FLAVOR}")
+    message(FATAL_ERROR "platform ${PLATFORM} doesn't support layout ${LAYOUT}")
 
 endif()
 
-# provide FLAVOR_* macro
-target_compile_definitions(mogpio PRIVATE ${FLAVOR_DEFINE})
+# provide LAYOUT_* macro
+target_compile_definitions(mogpio PRIVATE ${LAYOUT_DEFINE})
 
 
 # provide PLATFORM_PICO macro

@@ -4,8 +4,8 @@ cmake_minimum_required(VERSION 3.13)
 # set platform
 # (build plain RP2040 by default)
 set(PLATFORM "pico" CACHE STRING "platform to compile on (pico, esp32)")
-# set board flavor (plain by default)
-set(FLAVOR "intern" CACHE STRING "gpio hardware flavor")
+# set board layout (plain by default)
+set(LAYOUT "intern" CACHE STRING "gpio hardware layout")
 
 # esp idf
 if(PLATFORM STREQUAL "esp32")
@@ -39,4 +39,4 @@ endif()
 # Additional compile options
 target_compile_options(mogpio PRIVATE -Wall -Wextra)
 
-message(STATUS "building for platform: ${PLATFORM} flavor: ${FLAVOR}")
+message(STATUS "building for platform: ${PLATFORM} layout: ${LAYOUT}")

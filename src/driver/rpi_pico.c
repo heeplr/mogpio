@@ -36,7 +36,7 @@
 
 #include "logger.h"
 #include "hal_gpio.h"
-#include "hal_gpio_flavor.h"
+#include "hal_gpio_layout.h"
 #include "rpi_pico.h"
 
 #include "pico/stdlib.h"
@@ -44,17 +44,17 @@
 
 
 
-static inline uint8_t gpio_number(const hal_gpio_pico_ctx_t *ctx, uint8_t pin)
+static inline size_t gpio_number(const hal_gpio_pico_ctx_t *ctx, size_t pin)
 {
-    return (uint8_t)(ctx->first_gpio + pin);
+    return (size_t)(ctx->first_gpio + pin);
 }
 
-static int pico_validate_pin(const hal_gpio_pico_ctx_t *ctx, uint8_t pin)
+static int pico_validate_pin(const hal_gpio_pico_ctx_t *ctx, size_t pin)
 {
     if (ctx == NULL) {
         return HAL_GPIO_ERR_INVAL;
     }
-    if (pin >= ctx->pin_count || pin >= HAL_PICO_MAX_PINS) {
+    if (pin >= ctx->pin_count || pin >= HAL_PICO_PINS) {
         return HAL_GPIO_ERR_BOUNDS;
     }
     return HAL_GPIO_OK;
@@ -89,7 +89,7 @@ static int pico_deinit(void *vctx)
      * Deinitializing a Pico GPIO returns it to a neutral state. Doing this for
      * every exposed pin makes suspend/powerdown behavior predictable.
      */
-    for (uint8_t pin = 0; pin < ctx->pin_count && pin < HAL_PICO_MAX_PINS; ++pin) {
+    for (size_t pin = 0; pin < ctx->pin_count && pin < HAL_PICO_PINS; ++pin) {
         gpio_deinit(gpio_number(ctx, pin));
         ctx->configured[pin] = false;
         ctx->function[pin] = HAL_GPIO_FN_NONE;
@@ -98,7 +98,7 @@ static int pico_deinit(void *vctx)
     return HAL_GPIO_OK;
 }
 
-static int pico_pin_config(void *vctx, uint8_t pin,
+static int pico_pin_config(void *vctx, size_t pin,
                                hal_gpio_function_t function,
                                hal_gpio_mode_t mode)
 {
@@ -108,7 +108,7 @@ static int pico_pin_config(void *vctx, uint8_t pin,
         return rc;
     }
 
-    const uint8_t gpio = gpio_number(ctx, pin);
+    const size_t gpio = gpio_number(ctx, pin);
 
     INFO("pico: configure pin %d, func: %d, mode: %d", pin, function, mode);
     if (function == HAL_GPIO_FN_NONE) {
@@ -157,7 +157,7 @@ static int pico_pin_config(void *vctx, uint8_t pin,
     return HAL_GPIO_OK;
 }
 
-static int pico_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *function)
+static int pico_get_function(void *vctx, size_t pin, hal_gpio_function_t *function)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     int rc = pico_validate_pin(ctx, pin);
@@ -166,7 +166,7 @@ static int pico_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *funct
     }
 
     /* get pico gpio pin */
-    const uint8_t gpio = gpio_number(ctx, pin);
+    const size_t gpio = gpio_number(ctx, pin);
 
     switch(gpio_get_dir(gpio)) {
 
@@ -182,7 +182,7 @@ static int pico_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *funct
     return HAL_GPIO_OK;
 }
 
-static int pico_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
+static int pico_get_mode(void *vctx, size_t pin, hal_gpio_mode_t *mode)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     int rc = pico_validate_pin(ctx, pin);
@@ -190,7 +190,7 @@ static int pico_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
         return rc;
     }
 
-    const uint8_t gpio = gpio_number(ctx, pin);
+    const size_t gpio = gpio_number(ctx, pin);
 
     bool pulled_up = gpio_is_pulled_up(gpio);
     bool pulled_down = gpio_is_pulled_down(gpio);
@@ -208,7 +208,7 @@ static int pico_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
     return HAL_GPIO_OK;
 }
 
-static int pico_read(void *vctx, uint8_t pin, bool *value)
+static int pico_read(void *vctx, size_t pin, bool *value)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     int rc = pico_validate_pin(ctx, pin);
@@ -229,7 +229,7 @@ static int pico_read(void *vctx, uint8_t pin, bool *value)
     return HAL_GPIO_OK;
 }
 
-static int pico_write(void *vctx, uint8_t pin, bool value)
+static int pico_write(void *vctx, size_t pin, bool value)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     int rc = pico_validate_pin(ctx, pin);
@@ -254,5 +254,4 @@ const hal_gpio_driver_ops_t hal_gpio_pico_ops = {
     .get_function = pico_get_function,
     .get_mode = pico_get_mode
 };
-
 

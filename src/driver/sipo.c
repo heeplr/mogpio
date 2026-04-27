@@ -35,7 +35,7 @@
 #include <stddef.h>
 
 #include "hal_gpio.h"
-#include "hal_gpio_flavor.h"
+#include "hal_gpio_layout.h"
 #include "sipo.h"
 
 #include "pico/stdlib.h"
@@ -44,7 +44,7 @@
 
 
 
-static int _validate_pin(const hal_gpio_sipo_ctx_t *ctx, uint8_t pin)
+static int _validate_pin(const hal_gpio_sipo_ctx_t *ctx, size_t pin)
 {
     if (ctx == NULL) {
         return HAL_GPIO_ERR_INVAL;
@@ -55,9 +55,9 @@ static int _validate_pin(const hal_gpio_sipo_ctx_t *ctx, uint8_t pin)
     return HAL_GPIO_OK;
 }
 
-static inline uint8_t _mapped_pin(const hal_gpio_sipo_ctx_t *ctx, uint8_t pin)
+static inline size_t _mapped_pin(const hal_gpio_sipo_ctx_t *ctx, size_t pin)
 {
-    return ctx->reverse_order ? (uint8_t)(ctx->pin_count - 1u - pin) : pin;
+    return ctx->reverse_order ? (size_t)(ctx->pin_count - 1u - pin) : pin;
 }
 
 static void sipo_flush_shadow(hal_gpio_sipo_ctx_t *ctx)
@@ -73,9 +73,9 @@ static void sipo_flush_shadow(hal_gpio_sipo_ctx_t *ctx)
      * chain in one clean transfer.
      */
     gpio_put(ctx->latch_pin, false);
-    for (uint8_t i = 0; i < ctx->pin_count; ++i) {
+    for (size_t i = 0; i < ctx->pin_count; ++i) {
         gpio_put(ctx->clock_pin, false);
-        const uint8_t src = _mapped_pin(ctx, i);
+        const size_t src = _mapped_pin(ctx, i);
         gpio_put(ctx->data_pin, ctx->shadow_bits[src]);
         gpio_put(ctx->clock_pin, true);
     }
@@ -126,7 +126,7 @@ static int sipo_deinit(void *vctx)
     return HAL_GPIO_OK;
 }
 
-static int sipo_pin_config(void *vctx, uint8_t pin,
+static int sipo_pin_config(void *vctx, size_t pin,
                            hal_gpio_function_t function,
                            hal_gpio_mode_t mode)
 {
@@ -149,6 +149,7 @@ static int sipo_pin_config(void *vctx, uint8_t pin,
             sipo_flush_shadow(ctx);
             break;
 
+        case HAL_GPIO_FN_OUTPUT:
         case HAL_GPIO_FN_NOCHANGE:
             break;
 
@@ -166,7 +167,7 @@ static int sipo_pin_config(void *vctx, uint8_t pin,
     return HAL_GPIO_OK;
 }
 
-static int sipo_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *function)
+static int sipo_get_function(void *vctx, size_t pin, hal_gpio_function_t *function)
 {
     hal_gpio_sipo_ctx_t *ctx = (hal_gpio_sipo_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -178,7 +179,7 @@ static int sipo_get_function(void *vctx, uint8_t pin, hal_gpio_function_t *funct
     return HAL_GPIO_OK;
 }
 
-static int sipo_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
+static int sipo_get_mode(void *vctx, size_t pin, hal_gpio_mode_t *mode)
 {
     hal_gpio_sipo_ctx_t *ctx = (hal_gpio_sipo_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -191,7 +192,7 @@ static int sipo_get_mode(void *vctx, uint8_t pin, hal_gpio_mode_t *mode)
     return HAL_GPIO_OK;
 }
 
-static int sipo_read(void *vctx, uint8_t pin, bool *value)
+static int sipo_read(void *vctx, size_t pin, bool *value)
 {
     hal_gpio_sipo_ctx_t *ctx = (hal_gpio_sipo_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -212,7 +213,7 @@ static int sipo_read(void *vctx, uint8_t pin, bool *value)
     return HAL_GPIO_OK;
 }
 
-static int sipo_write(void *vctx, uint8_t pin, bool value)
+static int sipo_write(void *vctx, size_t pin, bool value)
 {
     hal_gpio_sipo_ctx_t *ctx = (hal_gpio_sipo_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);

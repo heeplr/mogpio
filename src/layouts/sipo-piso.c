@@ -23,55 +23,65 @@
  *
  * This file is part of the moGPIO firmware.
  */
-
 /*
- * Board description for the GPIO HAL to use the platforms' internal GPIO
+ * Board description for the GPIO HAL to use
+ *
+ * - PISO shift registers (Bank 0)
+ * - SIPO shift registers (Bank 1)
  */
-
 #include <stddef.h>
-#include <stdint.h>
 
 #include "hal_gpio.h"
-#include "hal_gpio_flavor.h"
-
-#ifdef PLATFORM_PICO
-#include "driver/rpi_pico.h"
-#elif PLATFORM_ESP32
-#include "driver/esp32.h"
-#endif
+#include "hal_gpio_layout.h"
+#include "driver/piso.h"
+#include "driver/sipo.h"
 
 
-enum {
-    HAL_BANK_INTERN   = 0,
-    HAL_BANK_COUNT    = 1,
+static hal_gpio_piso_ctx_t s_piso_ctx = {
+    .data_pin = 6,
+    .clock_pin = 7,
+    .load_pin = 8,
+    .pin_count = 16,
+    .reverse_order = false,
 };
 
-
-/*
- * The driver contexts are mutable because the drivers store runtime state such
- * as configuration flags and cached/shadowed pin values.
- */
-static hal_gpio_pico_ctx_t s_pico_ctx = {
-#ifdef DEBUG_OUT
-    .first_gpio = 2,    // GPIO0 and GPIO1 used for UART0
-#else
-    .first_gpio = 0,    // use all pins
-#endif
-    .pin_count = HAL_PICO_MAX_PINS,
+static hal_gpio_sipo_ctx_t s_sipo_ctx = {
+    .data_pin = 2,
+    .clock_pin = 3,
+    .latch_pin = 4,
+    .pin_count = 16,
+    .reverse_order = false,
 };
 
+static const hal_gpio_driver_t s_drivers[] = {
+    {
+        .ops = &hal_gpio_piso_ops,
+        .ctx = &s_piso_ctx,
+        .pin_count = 16,
+    },
+    {
+        .ops = &hal_gpio_sipo_ops,
+        .ctx = &s_sipo_ctx,
+        .pin_count = 16,
+    },
+};
 
 static const hal_gpio_bank_t s_banks[] = {
     {
-        .bank_id = HAL_BANK_INTERN,
-        .name = "pico-gpio",
-        .pin_count = HAL_PICO_MAX_PINS,
-        .ops = &hal_gpio_pico_ops,
-        .ctx = &s_pico_ctx,
-    }
+        .bank_id = 0,
+        .name = "piso-input-chain",
+        .pin_count = 16,
+    },
+    {
+        .bank_id = 1,
+        .name = "sipo-output-chain",
+        .pin_count = 16,
+    },
 };
 
-const hal_gpio_flavor_t g_hal_gpio_flavor = {
+const hal_gpio_layout_t g_hal_gpio_layout = {
+    .drivers = s_drivers,
     .banks = s_banks,
+    .driver_count = sizeof(s_drivers) / sizeof(s_drivers[0]),
     .bank_count = sizeof(s_banks) / sizeof(s_banks[0]),
 };

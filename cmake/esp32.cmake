@@ -17,37 +17,37 @@ idf_component_register(
     INCLUDE_DIRS "."
 )
 
-if(FLAVOR STREQUAL "intern")
+if(LAYOUT STREQUAL "intern")
     idf_component_register(
         SRCS "src/driver/esp32.c"
              "src/boards/intern.c"
     )
-    set(FLAVOR_DEFINE FLAVOR_INTERN)
+    set(LAYOUT_DEFINE LAYOUT_INTERN)
 
-elseif(FLAVOR STREQUAL "intern-sipo-piso")
+elseif(LAYOUT STREQUAL "intern-sipo-piso")
     idf_component_register(
         SRCS "src/driver/esp32.c"
              "src/driver/sipo.c"
              "src/driver/piso.c"
              "src/boards/intern-sipo-piso.c"
     )
-    set(FLAVOR_DEFINE FLAVOR_INTERN_SIPO_PISO)
+    set(LAYOUT_DEFINE LAYOUT_INTERN_SIPO_PISO)
 
-elseif(FLAVOR STREQUAL "sipo-piso")
+elseif(LAYOUT STREQUAL "sipo-piso")
     idf_component_register(
         SRCS "src/driver/sipo.c"
              "src/driver/piso.c"
              "src/boards/sipo-piso.c"
     )
-    set(FLAVOR_DEFINE FLAVOR_SIPO_PISO)
+    set(LAYOUT_DEFINE LAYOUT_SIPO_PISO)
 
 else()
-    message(FATAL_ERROR "platform ${PLATFORM} doesn't support flavor ${FLAVOR}")
+    message(FATAL_ERROR "platform ${PLATFORM} doesn't support layout ${LAYOUT}")
 
 endif()
 
 # provide BOA
-target_compile_definitions(mogpio PRIVATE ${FLAVOR_DEFINE})
+target_compile_definitions(mogpio PRIVATE ${LAYOUT_DEFINE})
 # provide PLATFORM_ESP32 macro
 target_compile_definitions(${COMPONENT_LIB} PRIVATE PLATFORM_ESP32)
 

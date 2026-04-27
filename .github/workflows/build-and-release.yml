@@ -12,41 +12,41 @@ jobs:
     strategy:
       matrix:
         include:
-          - flavor: pico-intern
-            args: "-D PLATFORM=pico -D FLAVOR=intern"
+          - layout: pico-intern
+            args: "-D PLATFORM=pico -D LAYOUT=intern"
             filename: mogpio-intern-pico.uf2
-          - flavor: pico-intern-sipo-piso
-            args: "-D PLATFORM=pico -D FLAVOR=intern-sipo-piso"
+          - layout: pico-intern-sipo-piso
+            args: "-D PLATFORM=pico -D LAYOUT=intern-sipo-piso"
             filename: mogpio-intern-sipo-piso-pico.uf2
-          - flavor: pico-sipo-piso
-            args: "-D PLATFORM=pico -D FLAVOR=sipo-piso"
+          - layout: pico-sipo-piso
+            args: "-D PLATFORM=pico -D LAYOUT=sipo-piso"
             filename: mogpio-sipo-piso-pico.uf2
-          - flavor: pico2-intern
-            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern"
+          - layout: pico2-intern
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D LAYOUT=intern"
             filename: mogpio-intern-pico2.uf2
-          - flavor: pico2-intern-sipo-piso
-            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern-sipo-piso"
+          - layout: pico2-intern-sipo-piso
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D LAYOUT=intern-sipo-piso"
             filename: mogpio-intern-sipo-piso-pico2.uf2
-          - flavor: pico2-sipo-piso
-            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=sipo-piso"
+          - layout: pico2-sipo-piso
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D LAYOUT=sipo-piso"
             filename: mogpio-sipo-piso-pico2.uf2
-          - flavor: pico-intern-debug
-            args: "-D PLATFORM=pico -D FLAVOR=intern -D CMAKE_BUILD_TYPE=Debug"
+          - layout: pico-intern-debug
+            args: "-D PLATFORM=pico -D LAYOUT=intern -D CMAKE_BUILD_TYPE=Debug"
             filename: mogpio-intern-debug-pico.uf2
-          - flavor: pico-intern-sipo-piso-debug
-            args: "-D PLATFORM=pico -D FLAVOR=intern-sipo-piso -D CMAKE_BUILD_TYPE=Debug"
+          - layout: pico-intern-sipo-piso-debug
+            args: "-D PLATFORM=pico -D LAYOUT=intern-sipo-piso -D CMAKE_BUILD_TYPE=Debug"
             filename: mogpio-intern-sipo-piso-debug-pico.uf2
-          - flavor: pico-sipo-piso-debug
-            args: "-D PLATFORM=pico -D FLAVOR=sipo-piso -D CMAKE_BUILD_TYPE=Debug"
+          - layout: pico-sipo-piso-debug
+            args: "-D PLATFORM=pico -D LAYOUT=sipo-piso -D CMAKE_BUILD_TYPE=Debug"
             filename: mogpio-sipo-piso-debug-pico.uf2
-          - flavor: pico2-intern-debug
-            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern -D CMAKE_BUILD_TYPE=Debug"
+          - layout: pico2-intern-debug
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D LAYOUT=intern -D CMAKE_BUILD_TYPE=Debug"
             filename: mogpio-intern-debug-pico2.uf2
-          - flavor: pico2-intern-sipo-piso-debug
-            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=intern-sipo-piso -D CMAKE_BUILD_TYPE=Debug"
+          - layout: pico2-intern-sipo-piso-debug
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D LAYOUT=intern-sipo-piso -D CMAKE_BUILD_TYPE=Debug"
             filename: mogpio-intern-sipo-piso-debug-pico2.uf2
-          - flavor: pico2-sipo-piso
-            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D FLAVOR=sipo-piso -D CMAKE_BUILD_TYPE=Debug"
+          - layout: pico2-sipo-piso
+            args: "-D PICO_BOARD=pico2 -D PLATFORM=pico -D LAYOUT=sipo-piso -D CMAKE_BUILD_TYPE=Debug"
             filename: mogpio-sipo-piso-debug-pico2.uf2
 
     steps:
@@ -55,7 +55,7 @@ jobs:
         with:
           submodules: true
 
-      - name: Build ${{ matrix.flavor }}
+      - name: Build ${{ matrix.layout }}
         id: build
         uses: samyarsadat/Pico-Build-Action@v1.3.0
         with:
@@ -70,7 +70,7 @@ jobs:
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ matrix.flavor }}
+          name: ${{ matrix.layout }}
           path: release_files/${{ matrix.filename }}
 
   release:
