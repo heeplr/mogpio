@@ -342,7 +342,14 @@ static bool parse_config_line(const char *line, size_t len) {
 
     INFO("configuring bank: %lu, pin: %lu, func: %d, mode: %d",
          (unsigned long)bankid, (unsigned long)pin, function, mode);
-    hal_gpio_pin_config((uint8_t)bankid, (uint8_t)pin, function, mode);
+
+    if(hal_gpio_set_mode(bankid, pin, mode) != HAL_GPIO_OK) {
+        return false;
+    }
+
+    if(hal_gpio_set_function(bankid, pin, function) != HAL_GPIO_OK) {
+        return false;
+    }
 
     return true;
 }

@@ -98,9 +98,7 @@ static int pico_deinit(void *vctx)
     return HAL_GPIO_OK;
 }
 
-static int pico_pin_config(void *vctx, size_t pin,
-                               hal_gpio_function_t function,
-                               hal_gpio_mode_t mode)
+static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t function)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     int rc = pico_validate_pin(ctx, pin);
@@ -110,19 +108,35 @@ static int pico_pin_config(void *vctx, size_t pin,
 
     const size_t gpio = gpio_number(ctx, pin);
 
-    INFO("pico: configure pin %d, func: %d, mode: %d", pin, function, mode);
+    INFO("pin %d, func: %d", pin, function, mode);
+
     if (function == HAL_GPIO_FN_NONE) {
         /* NONE means “release the pin”. */
         gpio_deinit(gpio);
-        ctx->configured[pin] = false;
-        ctx->function[pin] = HAL_GPIO_FN_NONE;
-        ctx->mode[pin] = HAL_GPIO_MODE_PUSHPULL;
         return HAL_GPIO_OK;
     }
 
     if (function != HAL_GPIO_FN_INPUT && function != HAL_GPIO_FN_OUTPUT) {
         return HAL_GPIO_ERR_INVAL;
     }
+
+    if(function != HAL_GPIO_FN_NOCHANGE)
+        gpio_set_dir(gpio, function == HAL_GPIO_FN_OUTPUT);
+
+    return HAL_GPIO_OK;
+}
+
+static int pico_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
+{
+    hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
+    int rc = pico_validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    const size_t gpio = gpio_number(ctx, pin);
+
+    INFO("pin %d, mode: %d", pin, mode);
 
     switch (mode) {
         case HAL_GPIO_MODE_PULL_UP:
@@ -144,16 +158,6 @@ static int pico_pin_config(void *vctx, size_t pin,
             return HAL_GPIO_ERR_INVAL;
     }
 
-    /* gpio_init() puts the pad into a known state before we configure it. */
-    gpio_init(gpio);
-    if(function != HAL_GPIO_FN_NOCHANGE)
-        gpio_set_dir(gpio, function == HAL_GPIO_FN_OUTPUT);
-
-    ctx->configured[pin] = true;
-    ctx->function[pin] = function;
-    ctx->mode[pin] = mode;
-
-    INFO("-> configured pin: %d", pin);
     return HAL_GPIO_OK;
 }
 
@@ -248,9 +252,10 @@ static int pico_write(void *vctx, size_t pin, bool value)
 const hal_gpio_driver_ops_t hal_gpio_pico_ops = {
     .init = pico_init,
     .deinit = pico_deinit,
-    .pin_config = pico_pin_config,
     .read = pico_read,
     .write = pico_write,
+    .set_function = pico_set_function,
+    .set_mode = pico_set_mode,
     .get_function = pico_get_function,
     .get_mode = pico_get_mode
 };

@@ -124,9 +124,22 @@ static int sipo_deinit(void *vctx)
     return HAL_GPIO_OK;
 }
 
-static int sipo_pin_config(void *vctx, size_t pin,
-                           hal_gpio_function_t function,
-                           hal_gpio_mode_t mode)
+static int sipo_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
+{
+    hal_gpio_sipo_ctx_t *ctx = (hal_gpio_sipo_ctx_t *)vctx;
+    int rc = _validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    if (mode != HAL_GPIO_MODE_PUSHPULL) {
+        return HAL_GPIO_ERR_UNSUPPORTED;
+    }
+
+    return HAL_GPIO_OK;
+}
+
+static int sipo_set_function(void *vctx, size_t pin, hal_gpio_function_t function)
 {
     hal_gpio_sipo_ctx_t *ctx = (hal_gpio_sipo_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -151,11 +164,6 @@ static int sipo_pin_config(void *vctx, size_t pin,
 
         default:
             return HAL_GPIO_ERR_INVAL;
-    }
-
-
-    if (mode != HAL_GPIO_MODE_PUSHPULL) {
-        return HAL_GPIO_ERR_UNSUPPORTED;
     }
 
     return HAL_GPIO_OK;
@@ -219,9 +227,10 @@ static int sipo_write(void *vctx, size_t pin, bool value)
 const hal_gpio_driver_ops_t hal_gpio_sipo_ops = {
     .init = sipo_init,
     .deinit = sipo_deinit,
-    .pin_config = sipo_pin_config,
     .read = sipo_read,
     .write = sipo_write,
+    .set_function = sipo_set_function,
+    .set_mode = sipo_set_mode,
     .get_function = sipo_get_function,
     .get_mode = sipo_get_mode
 };

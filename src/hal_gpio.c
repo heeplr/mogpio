@@ -161,10 +161,8 @@ int hal_gpio_deinit(void)
     return HAL_GPIO_OK;
 }
 
-/* set config for GPIO pin */
-int hal_gpio_pin_config(size_t bankid, size_t pin,
-                        hal_gpio_function_t function,
-                        hal_gpio_mode_t mode)
+/* set mode for GPIO pin */
+int hal_gpio_set_mode(size_t bankid, size_t pin, hal_gpio_mode_t mode)
 {
     if (!s_hal_initialized) {
         return HAL_GPIO_ERR_NOT_INIT;
@@ -193,11 +191,48 @@ int hal_gpio_pin_config(size_t bankid, size_t pin,
         return rc;
     }
 
-    if (driver == NULL || driver->ops->pin_config == NULL) {
+    if (driver == NULL || driver->ops->set_mode == NULL) {
         return HAL_GPIO_ERR_INVAL;
     }
 
-    return driver->ops->pin_config(driver->ctx, hw_pin, function, mode);
+    return driver->ops->set_mode(driver->ctx, hw_pin, mode);
+}
+
+/* set function for GPIO pin */
+int hal_gpio_set_function(size_t bankid, size_t pin, hal_gpio_function_t function)
+{
+    if (!s_hal_initialized) {
+        return HAL_GPIO_ERR_NOT_INIT;
+    }
+
+    if (bankid >= hal_gpio_bankcount()) {
+        return HAL_GPIO_ERR_BOUNDS;
+    }
+
+    if (pin >= hal_gpio_bank_pincount(bankid)) {
+        return HAL_GPIO_ERR_BOUNDS;
+    }
+
+    /* get hardware offset of this bank/pin */
+    size_t gpio;
+    int rc = _gpio_from_bank_pin(bankid, pin, &gpio);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    /* get driver + pin for hardware offset */
+    hal_gpio_driver_t *driver;
+    size_t hw_pin;
+    rc = _driver_pin_for_gpio(gpio, &driver, &hw_pin);
+    if(rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
+    if (driver == NULL || driver->ops->set_function == NULL) {
+        return HAL_GPIO_ERR_INVAL;
+    }
+
+    return driver->ops->set_function(driver->ctx, hw_pin, function);
 }
 
 /* read input value from gpIo */

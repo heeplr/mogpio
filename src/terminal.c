@@ -156,13 +156,17 @@ static void cmd_write(uint8_t bank, uint8_t pin, bool value)
 
 static void cmd_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gpio_mode_t mode)
 {
-    int rc = hal_gpio_pin_config(bank, pin, fn, mode);
-
+    int rc = hal_gpio_set_function(bank, pin, fn);
     if (rc != HAL_GPIO_OK) {
-        terminal_write("ERR config %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        terminal_write("ERR function %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
+    rc = hal_gpio_set_mode(bank, pin, mode);
+    if (rc != HAL_GPIO_OK) {
+        terminal_write("ERR mode %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        return;
+    }
     terminal_write("OK\r\n");
 }
 

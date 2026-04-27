@@ -120,9 +120,7 @@ static int piso_deinit(void *vctx)
     return HAL_GPIO_OK;
 }
 
-static int piso_pin_config(void *vctx, size_t pin,
-                           hal_gpio_function_t function,
-                           hal_gpio_mode_t mode)
+static int piso_set_function(void *vctx, size_t pin, hal_gpio_function_t function)
 {
     hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
     int rc = _validate_pin(ctx, pin);
@@ -131,15 +129,27 @@ static int piso_pin_config(void *vctx, size_t pin,
     }
 
     switch (function) {
-        case HAL_GPIO_FN_OUTPUT:
-            return HAL_GPIO_ERR_UNSUPPORTED;
-
-        case HAL_GPIO_FN_NONE:
         case HAL_GPIO_FN_NOCHANGE:
+        case HAL_GPIO_FN_OUTPUT:
+            return HAL_GPIO_OK;
+
+        case HAL_GPIO_FN_INPUT:
+        case HAL_GPIO_FN_NONE:
             break;
 
         default:
             return HAL_GPIO_ERR_INVAL;
+    }
+
+    return HAL_GPIO_ERR_UNSUPPORTED;
+}
+
+static int piso_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
+{
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    int rc = _validate_pin(ctx, pin);
+    if (rc != HAL_GPIO_OK) {
+        return rc;
     }
 
     /*
@@ -207,9 +217,10 @@ static int piso_write(void *vctx, size_t pin, bool value)
 const hal_gpio_driver_ops_t hal_gpio_piso_ops = {
     .init = piso_init,
     .deinit = piso_deinit,
-    .pin_config = piso_pin_config,
     .read = piso_read,
     .write = piso_write,
+    .set_function = piso_set_function,
+    .set_mode = piso_set_mode,
     .get_function = piso_get_function,
     .get_mode = piso_get_mode
 };

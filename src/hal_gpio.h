@@ -79,16 +79,15 @@ enum {
 };
 
 /*
- * Callbacks implemented by a driver backend.
+ * functions implemented by a driver backend.
  */
 typedef struct hal_gpio_driver_ops {
     int (*init)(void *ctx);
     int (*deinit)(void *ctx);
-    int (*pin_config)(void *ctx, size_t pin,
-                      hal_gpio_function_t function,
-                      hal_gpio_mode_t mode);
     int (*read)(void *ctx, size_t pin, bool *value);
     int (*write)(void *ctx, size_t pin, bool value);
+    int (*set_mode)(void *ctx, size_t pin, hal_gpio_mode_t mode);
+    int (*set_function)(void *ctx, size_t pin, hal_gpio_function_t function);
     int (*get_function)(void *ctx, size_t pin, hal_gpio_function_t *function);
     int (*get_mode)(void *ctx, size_t pin, hal_gpio_mode_t *mode);
 } hal_gpio_driver_ops_t;
@@ -119,14 +118,13 @@ typedef struct {
 
 int hal_gpio_init(void);
 int hal_gpio_deinit(void);
-int hal_gpio_pin_config(size_t bankid, size_t pin,
-                        hal_gpio_function_t function,
-                        hal_gpio_mode_t mode);
 
 int hal_gpio_read(size_t bankid, size_t pin, bool *value);
 int hal_gpio_write(size_t bankid, size_t pin, bool value);
 int hal_gpio_get_function(size_t bankid, size_t pin, hal_gpio_function_t *function);
 int hal_gpio_get_mode(size_t bankid, size_t pin, hal_gpio_mode_t *mode);
+int hal_gpio_set_function(size_t bankid, size_t pin, hal_gpio_function_t function);
+int hal_gpio_set_mode(size_t bankid, size_t pin, hal_gpio_mode_t mode);
 
 const char *hal_gpio_function_name(hal_gpio_function_t fn);
 const char *hal_gpio_mode_name(hal_gpio_mode_t mode);

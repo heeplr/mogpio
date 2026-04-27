@@ -70,6 +70,11 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
             break;
     }
 
+    int rc = hal_gpio_set_function(bankid, pin, f);
+    if(rc != HAL_GPIO_OK) {
+        return rc;
+    }
+
     switch (pull) {
         case USBIO_GPIO_PINCFG_PULLDOWN:
             m = HAL_GPIO_MODE_PULL_DOWN;
@@ -89,7 +94,7 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
             break;
     }
 
-    return hal_gpio_pin_config(bankid, pin, f, m);
+    return hal_gpio_set_mode(bankid, pin, m);
 }
 
 
