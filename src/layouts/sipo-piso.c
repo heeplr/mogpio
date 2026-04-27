@@ -49,6 +49,20 @@ static hal_gpio_piso_ctx_t s_piso_ctx = {
     .load_pin = 8,
     .pin_count = 16,
     .reverse_order = false,
+    .mode = {
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+        HAL_GPIO_MODE_PULL_DOWN,
+    }
 };
 
 /* SIPO chain 2x8 inputs on GPIO3/4/5 */

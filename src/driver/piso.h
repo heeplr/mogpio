@@ -37,7 +37,7 @@ typedef struct {
     size_t load_pin;        // Parallel load / latch control.
     size_t pin_count;       // Total number of input bits exposed.
     bool reverse_order;     // Flip bit order if the chain is wired backwards.
-
+    hal_gpio_mode_t mode[HAL_PISO_MAX_PINS];   // PISOs have hardwired mode
     bool cached_bits[HAL_PISO_MAX_PINS];
 } hal_gpio_piso_ctx_t;
 

@@ -146,24 +146,15 @@ static int piso_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
 
 static int piso_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
 {
-    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *)vctx;
+    hal_gpio_piso_ctx_t *ctx = (hal_gpio_piso_ctx_t *) vctx;
     int rc = _validate_pin(ctx, pin);
     if (rc != HAL_GPIO_OK) {
         return rc;
     }
 
-    /*
-     * A PISO bank cannot generate a pull-up/pull-down on the external inputs.
-     * The mode is therefore only accepted as PUSHPULL to keep the API honest.
-     */
-    switch (mode) {
-        case HAL_GPIO_MODE_PUSHPULL:
-        case HAL_GPIO_MODE_NOCHANGE:
-            return HAL_GPIO_OK;
-
-        default:
-            break;
-    }
+    /* a PISO bank has hardwired pull-up/down inputs */
+    if (mode == HAL_GPIO_MODE_NOCHANGE || mode == ctx->mode[pin])
+        return HAL_GPIO_OK;
 
     return HAL_GPIO_ERR_UNSUPPORTED;
 }
@@ -187,8 +178,8 @@ static int piso_get_mode(void *vctx, size_t pin, hal_gpio_mode_t *mode)
     if (rc != HAL_GPIO_OK) {
         return rc;
     }
-    /* a PISO will always be in PUSHPULL mode */
-    *mode = HAL_GPIO_MODE_PUSHPULL;
+    /* a PISO will have a hardwired/hardcoded mode */
+    *mode = ctx->mode[pin];
     return HAL_GPIO_OK;
 }
 
