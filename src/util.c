@@ -79,6 +79,34 @@ bool parse_u32(const char *s, uint32_t *out) {
     return true;
 }
 
+bool parse_u16(const char *s, uint16_t *out) {
+    if(!s) {
+        return false;
+    }
+
+    size_t len = strlen(s);
+    if (len == 0) {
+        return false;
+    }
+
+    uint16_t value = 0;
+    for (size_t i = 0; i < len; ++i) {
+        unsigned char c = (unsigned char)s[i];
+        if (c < '0' || c > '9') {
+            return false;
+        }
+        uint16_t digit = (uint16_t)(c - '0');
+        if (value > (UINT16_MAX - digit) / 10u) {
+            return false;
+        }
+        value = value * 10u + digit;
+    }
+
+    *out = value;
+    return true;
+
+}
+
 bool parse_u8(const char *s, uint8_t *out)
 {
     if(!s) {
@@ -185,7 +213,7 @@ bool parse_mode(const char *s, hal_gpio_mode_t *mode)
 }
 
 /* parse bank:pin tuple */
-bool parse_bank_pin(const char *s, uint8_t *bank, uint8_t *pin)
+bool parse_bank_pin(const char *s, size_t *bank, size_t *pin)
 {
     const char *colon;
     char bank_buf[8];
@@ -210,9 +238,15 @@ bool parse_bank_pin(const char *s, uint8_t *bank, uint8_t *pin)
 
     memcpy(bank_buf, s, (size_t)(colon - s));
     bank_buf[colon - s] = '\0';
-    strcpy(pin_buf, colon + 1);
+    strncpy(pin_buf, colon + 1, sizeof(pin_buf));
 
-    return parse_u8(bank_buf, bank) && parse_u8(pin_buf, pin);
+    uint16_t b=0, p=0;
+    bool rc = parse_u16(bank_buf, &b) && parse_u16(pin_buf, &p);
+
+    *bank = (size_t) b;
+    *pin = (size_t) p;
+
+    return rc;
 }
 
 /* parse binary value */

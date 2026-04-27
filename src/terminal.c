@@ -173,8 +173,8 @@ static void cmd_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gp
 /* called when return is pressed in the terminal to process a command */
 static int terminal_execute(struct microrl *mrl, int argc, const char * const *argv)
 {
-    uint8_t bank = 0;
-    uint8_t pin = 0;
+    size_t bank = 0;
+    size_t pin = 0;
 
     MICRORL_UNUSED(mrl);
 
