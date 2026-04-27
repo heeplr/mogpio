@@ -102,8 +102,6 @@ static int piso_init(void *vctx)
     gpio_put(ctx->load_pin, true);
 
     memset(ctx->cached_bits, 0, sizeof(ctx->cached_bits));
-    memset(ctx->function, 0, sizeof(ctx->function));
-    memset(ctx->configured, 0, sizeof(ctx->configured));
 
     return HAL_GPIO_OK;
 }
@@ -137,10 +135,6 @@ static int piso_pin_config(void *vctx, size_t pin,
             return HAL_GPIO_ERR_UNSUPPORTED;
 
         case HAL_GPIO_FN_NONE:
-            ctx->function[pin] = HAL_GPIO_FN_NONE;
-            ctx->configured[pin] = false;
-            break;
-
         case HAL_GPIO_FN_NOCHANGE:
             break;
 
@@ -154,18 +148,14 @@ static int piso_pin_config(void *vctx, size_t pin,
      */
     switch (mode) {
         case HAL_GPIO_MODE_PUSHPULL:
-            return HAL_GPIO_ERR_UNSUPPORTED;
-
         case HAL_GPIO_MODE_NOCHANGE:
-            break;
+            return HAL_GPIO_OK;
 
         default:
-            ctx->function[pin] = HAL_GPIO_FN_INPUT;
             break;
     }
 
-    ctx->configured[pin] = true;
-    return HAL_GPIO_OK;
+    return HAL_GPIO_ERR_UNSUPPORTED;
 }
 
 static int piso_get_function(void *vctx, size_t pin, hal_gpio_function_t *function)
@@ -198,10 +188,6 @@ static int piso_read(void *vctx, size_t pin, bool *value)
     int rc = _validate_pin(ctx, pin);
     if (rc != HAL_GPIO_OK) {
         return rc;
-    }
-
-    if (!ctx->configured[pin] || ctx->function[pin] != HAL_GPIO_FN_INPUT) {
-        return HAL_GPIO_ERR_STATE;
     }
 
     /* Always refresh before a read so the caller gets the current chain state. */

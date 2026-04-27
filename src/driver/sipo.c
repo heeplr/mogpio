@@ -104,8 +104,6 @@ static int sipo_init(void *vctx)
     gpio_put(ctx->latch_pin, false);
 
     memset(ctx->shadow_bits, 0, sizeof(ctx->shadow_bits));
-    memset(ctx->function, 0, sizeof(ctx->function));
-    memset(ctx->configured, 0, sizeof(ctx->configured));
 
     /* Drive the physical outputs to a known low state immediately. */
     sipo_flush_shadow(ctx);
@@ -143,8 +141,6 @@ static int sipo_pin_config(void *vctx, size_t pin,
 
         case HAL_GPIO_FN_NONE:
             /* Releasing the pin also clears its output level in the shadow buffer. */
-            ctx->function[pin] = HAL_GPIO_FN_NONE;
-            ctx->configured[pin] = false;
             ctx->shadow_bits[pin] = false;
             sipo_flush_shadow(ctx);
             break;
@@ -162,8 +158,6 @@ static int sipo_pin_config(void *vctx, size_t pin,
         return HAL_GPIO_ERR_UNSUPPORTED;
     }
 
-    ctx->function[pin] = HAL_GPIO_FN_OUTPUT;
-    ctx->configured[pin] = true;
     return HAL_GPIO_OK;
 }
 
@@ -200,10 +194,6 @@ static int sipo_read(void *vctx, size_t pin, bool *value)
         return rc;
     }
 
-    if (!ctx->configured[pin] || ctx->function[pin] != HAL_GPIO_FN_OUTPUT) {
-        return HAL_GPIO_ERR_STATE;
-    }
-
     /*
      * Reading a SIPO pin returns the shadow value that was last written.
      * That is usually the most useful behavior for output-only hardware.
@@ -219,10 +209,6 @@ static int sipo_write(void *vctx, size_t pin, bool value)
     int rc = _validate_pin(ctx, pin);
     if (rc != HAL_GPIO_OK) {
         return rc;
-    }
-
-    if (!ctx->configured[pin] || ctx->function[pin] != HAL_GPIO_FN_OUTPUT) {
-        return HAL_GPIO_ERR_STATE;
     }
 
     ctx->shadow_bits[pin] = value;

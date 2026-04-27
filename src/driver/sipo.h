@@ -29,16 +29,15 @@
 
 #define HAL_SIPO_MAX_PINS     32u
 
-typedef struct {
-    size_t data_pin;     // Serial data from to the SIPO chain.
-    size_t clock_pin;    // Shift clock.
-    size_t latch_pin;    // Storage-register latch.
-    size_t pin_count;    // Total number of output bits exposed.
-    bool reverse_order;   // Flip bit order if the chain is wired backwards.
 
-    bool shadow_bits[HAL_SIPO_MAX_PINS];
-    hal_gpio_function_t function[HAL_SIPO_MAX_PINS];
-    bool configured[HAL_SIPO_MAX_PINS];
+/* driver instance configuration & runtime data */
+typedef struct {
+    size_t data_pin;        // Serial data from to the SIPO chain.
+    size_t clock_pin;       // Shift clock.
+    size_t latch_pin;       // Storage-register latch.
+    size_t pin_count;       // Total number of output bits exposed.
+    bool reverse_order;     // Flip bit order if the chain is wired backwards.
+    bool shadow_bits[HAL_SIPO_MAX_PINS];    // shadow buffer
 } hal_gpio_sipo_ctx_t;
 
 
