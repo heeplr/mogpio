@@ -34,7 +34,7 @@
 static uint32_t pin_bmap(uint8_t bankid)
 {
     uint32_t map = 0;
-    for(uint8_t n=0; n < hal_gpio_bank_pincount(bankid); n++) {
+    for(uint8_t n=0; n < hal_gpio_bank_pincount((size_t) bankid); n++) {
         map |= 1 << n;
     }
     return map;
@@ -70,7 +70,7 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
             break;
     }
 
-    int rc = hal_gpio_set_function(bankid, pin, f);
+    int rc = hal_gpio_set_function((size_t) bankid, (size_t) pin, f);
     if(rc != HAL_GPIO_OK) {
         return rc;
     }
@@ -94,7 +94,7 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
             break;
     }
 
-    return hal_gpio_set_mode(bankid, pin, m);
+    return hal_gpio_set_mode((size_t) bankid, (size_t) pin, m);
 }
 
 
@@ -141,10 +141,10 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
             bank banks[USBIO_MAX_GPIOBANKS];
 
             for(uint8_t id=0;
-                    id < hal_gpio_bankcount() && id < USBIO_MAX_GPIOBANKS;
+                    (size_t) id < hal_gpio_bankcount() && id < USBIO_MAX_GPIOBANKS;
                     id++) {
                 banks[id].id = id;
-                banks[id].pins = hal_gpio_bank_pincount(id);
+                banks[id].pins = hal_gpio_bank_pincount((size_t) id);
                 banks[id].bmap = pin_bmap(id);
             };
 
@@ -206,7 +206,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             /* read value of that pin */
             bool value;
             int ret;
-            ret = hal_gpio_read(in->bankid, in->pin, &value);
+            ret = hal_gpio_read((size_t) in->bankid, (size_t) in->pin, &value);
 
             /* build answer */
             out.value = (value ? 1u : 0u) << in->pin;
@@ -236,7 +236,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             uint32_t mask = 1u << in->pin;
             bool high = (in->value & mask) != 0;
             INFO("GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
-            if(hal_gpio_write(in->bankid, in->pin, high) != HAL_GPIO_OK)
+            if(hal_gpio_write((size_t) in->bankid, (size_t) in->pin, high) != HAL_GPIO_OK)
                 goto _hp_error;
             break;
         }

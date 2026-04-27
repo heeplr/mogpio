@@ -183,10 +183,10 @@ static inline uint32_t get_le32(const uint8_t *p) {
 static size_t build_config_text(char *data, size_t capacity) {
     size_t used = 0;
 
-    unsigned int bankcount = hal_gpio_bankcount();
-    for (uint8_t bankid = 0; bankid < bankcount; ++bankid) {
-        unsigned int pincount = hal_gpio_bank_pincount(bankid);
-        for (unsigned int pin = 0; pin < pincount; ++pin) {
+    size_t bankcount = hal_gpio_bankcount();
+    for (size_t bankid = 0; bankid < bankcount; ++bankid) {
+        size_t pincount = hal_gpio_bank_pincount(bankid);
+        for (size_t pin = 0; pin < pincount; ++pin) {
 
             const char *func_str = hal_gpio_function_name(HAL_GPIO_FN_NOCHANGE);
             hal_gpio_function_t function;
@@ -247,10 +247,10 @@ static size_t build_config_text(char *data, size_t capacity) {
 static size_t build_pins_text(char *data, size_t capacity) {
     size_t used = 0;
 
-    unsigned int bankcount = hal_gpio_bankcount();
-    for (uint8_t bankid = 0; bankid < bankcount; ++bankid) {
-        unsigned int pincount = hal_gpio_bank_pincount(bankid);
-        for (unsigned int pin = 0; pin < pincount; ++pin) {
+    size_t bankcount = hal_gpio_bankcount();
+    for (size_t bankid = 0; bankid < bankcount; ++bankid) {
+        size_t pincount = hal_gpio_bank_pincount(bankid);
+        for (size_t pin = 0; pin < pincount; ++pin) {
             bool value = false;
             int res = hal_gpio_read(bankid, pin, &value);
             if (res != HAL_GPIO_OK) {
@@ -312,12 +312,12 @@ static bool parse_config_line(const char *line, size_t len) {
     }
 
     uint32_t bankid = 0;
-    if (!parse_u32(bank, &bankid) || bankid >= hal_gpio_bankcount()) {
+    if (!parse_u32(bank, &bankid) || bankid >= (uint32_t) hal_gpio_bankcount()) {
         return false;
     }
 
     uint32_t pin = 0;
-    if (!parse_u32(lhs, &pin) || pin >= hal_gpio_bank_pincount((uint8_t)bankid)) {
+    if (!parse_u32(lhs, &pin) || pin >= (uint32_t) hal_gpio_bank_pincount((size_t) bankid)) {
         return false;
     }
 
@@ -341,13 +341,13 @@ static bool parse_config_line(const char *line, size_t len) {
     }
 
     INFO("configuring bank: %lu, pin: %lu, func: %d, mode: %d",
-         (unsigned long)bankid, (unsigned long)pin, function, mode);
+         bankid, pin, function, mode);
 
-    if(hal_gpio_set_mode(bankid, pin, mode) != HAL_GPIO_OK) {
+    if(hal_gpio_set_mode((size_t) bankid, (size_t) pin, mode) != HAL_GPIO_OK) {
         return false;
     }
 
-    if(hal_gpio_set_function(bankid, pin, function) != HAL_GPIO_OK) {
+    if(hal_gpio_set_function((size_t) bankid, (size_t) pin, function) != HAL_GPIO_OK) {
         return false;
     }
 
@@ -406,13 +406,13 @@ static bool parse_pin_line(const char *line, size_t len) {
 
     /* parse values */
     uint32_t bankid = 0;
-    if (!parse_u32(bank, &bankid) || bankid >= hal_gpio_bankcount()) {
+    if (!parse_u32(bank, &bankid) || bankid >= (uint32_t) hal_gpio_bankcount()) {
         ERROR("failed to parse bank: %s", bank);
         return false;
     }
 
     uint32_t pinid = 0;
-    if (!parse_u32(pin, &pinid) || pinid >= hal_gpio_bank_pincount((uint8_t)bankid)) {
+    if (!parse_u32(pin, &pinid) || pinid >= (uint32_t) hal_gpio_bank_pincount((size_t) bankid)) {
         ERROR("failed to parse pin: %s", pin);
         return false;
     }
@@ -425,7 +425,7 @@ static bool parse_pin_line(const char *line, size_t len) {
 
     /* is pin output? */
     hal_gpio_function_t func;
-    hal_gpio_get_function(bankid, pinid, &func);
+    hal_gpio_get_function((size_t) bankid, (size_t) pinid, &func);
     if(func != HAL_GPIO_FN_OUTPUT) {
         /* silently ignore */
         return true;
@@ -434,7 +434,7 @@ static bool parse_pin_line(const char *line, size_t len) {
     INFO("setting GPIO bank: %lu, pin: %lu, value: %d",
          (unsigned long) bankid, (unsigned long) pinid, value);
 
-    int res = hal_gpio_write((uint8_t)bankid, (uint8_t)pinid, value);
+    int res = hal_gpio_write((size_t) bankid, (size_t) pinid, value);
     if(res < 0) {
         ERROR("hal_gpio_write() error: %d", res);
     }
