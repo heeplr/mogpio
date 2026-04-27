@@ -34,7 +34,7 @@
 static uint32_t pin_bmap(uint8_t bankid)
 {
     uint32_t map = 0;
-    for(uint8_t n=0; n < hal_gpio_bank_pincount((size_t) bankid); n++) {
+    for(uint8_t n=0; n < hal_gpio_bank_pincount((size_t) bankid); ++n) {
         map |= 1 << n;
     }
     return map;
