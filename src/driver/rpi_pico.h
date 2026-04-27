@@ -33,6 +33,8 @@
 #define HAL_PICO_PINS 30u
 #endif
 
+
+/* driver instance configuration & runtime data */
 typedef struct {
     size_t first_gpio;   /* First GPIO used by this bank. */
     size_t pin_count;    /* Number of pins exposed */

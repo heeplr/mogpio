@@ -23,9 +23,11 @@
  *
  * This file is part of the moGPIO firmware.
  */
+
 /*
- * Board description for the GPIO HAL to use the platforms internal GPIO.
+ * Layout for the GPIO HAL to use the platforms internal GPIO.
  */
+
 #include <stddef.h>
 
 #include "hal_gpio.h"
@@ -38,6 +40,7 @@
 #endif
 
 
+/* raspberry pico internal GPIOs  */
 static hal_gpio_pico_ctx_t s_pico_ctx = {
 #ifdef DEBUG_OUT
     .first_gpio = 2,    // GPIO0 and GPIO1 used for UART0
@@ -47,6 +50,7 @@ static hal_gpio_pico_ctx_t s_pico_ctx = {
     .pin_count = HAL_PICO_PINS,
 };
 
+/* GPIO hardware driver layout */
 static const hal_gpio_driver_t s_drivers[] = {
     {
         .ops = &hal_gpio_pico_ops,
@@ -55,6 +59,10 @@ static const hal_gpio_driver_t s_drivers[] = {
     },
 };
 
+/*
+ * bank/pin layout - this can be set arbitrary. Pins are mapped to driver pins
+ * in sequential order
+ */
 static const hal_gpio_bank_t s_banks[] = {
     {
         .bank_id = 0,
@@ -63,6 +71,7 @@ static const hal_gpio_bank_t s_banks[] = {
     },
 };
 
+/* this layout */
 const hal_gpio_layout_t g_hal_gpio_layout = {
     .drivers = s_drivers,
     .banks = s_banks,
