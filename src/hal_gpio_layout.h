@@ -23,6 +23,8 @@
  *
  * This file is part of the moGPIO firmware.
  */
+
+
 /*
  * hal_gpio_layout.h
  *
@@ -45,19 +47,18 @@ extern "C" {
 /*
  * The complete board/layout description.
  *
- * Drivers and banks are defined in matching order. The n-th driver serves the
- * n-th bank, and GPIO pin numbering is derived sequentially from that order.
+ * Drivers and banks are defined as lists.
+ * Pin x on driver y will map to pin a from driver b in sequential order.
  */
 typedef struct {
-    const hal_gpio_driver_t *drivers;
-    const hal_gpio_bank_t *banks;
-    size_t driver_count;
-    size_t bank_count;
+    const hal_gpio_driver_t *drivers;   // list of driver descriptors
+    const hal_gpio_bank_t *banks;       // list of bank descriptors
+    size_t driver_count;                // total amount of registered drivers
+    size_t bank_count;                  // total amount of registered banks
 } hal_gpio_layout_t;
 
-/*
- * The active board description.
- */
+
+/* The active board description. */
 extern const hal_gpio_layout_t g_hal_gpio_layout;
 
 #ifdef __cplusplus

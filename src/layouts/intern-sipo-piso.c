@@ -30,6 +30,8 @@
  * - the platform's internal GPIOs (Bank 0)
  * - PISO shift registers (Bank 1)
  * - SIPO shift registers (Bank 2)
+ *
+ * only one single layout can be compiled
  */
 
 #include <stddef.h>

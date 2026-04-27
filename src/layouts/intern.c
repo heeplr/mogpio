@@ -26,6 +26,8 @@
 
 /*
  * Layout for the GPIO HAL to use the platforms internal GPIO.
+ *
+ * only one single layout can be compiled
  */
 
 #include <stddef.h>
