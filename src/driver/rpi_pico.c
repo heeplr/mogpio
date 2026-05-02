@@ -108,7 +108,7 @@ static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
 
     const size_t gpio = gpio_number(ctx, pin);
 
-    INFO("pin %d, func: %d", pin, function, mode);
+    INFO("pin %d, func: %d", pin, function);
 
     if (function == HAL_GPIO_FN_NONE) {
         /* NONE means “release the pin”. */
