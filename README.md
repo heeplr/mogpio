@@ -36,7 +36,7 @@ There are three ways moGPIO exposes GPIOs:
 
 ## 1. USBIO Protocol
 
-moGPIO will show up as /dev/gpiochipX[^2] once you plug it in, ready to use.
+moGPIO will show up as /dev/gpiochipX[^1] once you plug it in, ready to use.
 It's compatible to all available applications that build upon libgpiod.
 (e.g. https://docs.kernel.org/driver-api/driver/drivers-on-gpio.html).
 
