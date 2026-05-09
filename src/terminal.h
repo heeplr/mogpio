@@ -36,7 +36,6 @@ extern "C" {
 
 void terminal_init(void);
 void terminal_task(void);
-int terminal_write(const char *fmt, ...);
 
 #ifdef __cplusplus
 }

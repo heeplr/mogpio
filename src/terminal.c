@@ -69,9 +69,62 @@ static char *const s_no_completion[] = {
 static const char *s_complete_matches[64];
 #endif
 
+
+/* write string to cdc */
+static int _cdc_out(char *buf, size_t bufsize) {
+    // Send only what fits in the local buffer, but don't silently overrun.
+    size_t len = strnlen(buf, bufsize);
+    if (!tud_cdc_connected() || len == 0) {
+        return 0;
+    }
+
+    // TinyUSB CDC write can also be limited by FIFO space.
+    size_t off = 0;
+    while (off < len) {
+        uint32_t space = tud_cdc_write_available();
+        if (space == 0) {
+            tud_task(); // or just return and retry later if you prefer non-blocking
+            continue;
+        }
+
+        size_t chunk = len - off;
+        if (chunk > space) {
+            chunk = space;
+        }
+
+        tud_cdc_write(buf + off, (uint32_t)chunk);
+        off += chunk;
+    }
+
+    tud_cdc_write_flush();
+    return (int)len;
+}
+
+/* printf to terminal */
+static int _write(const char *fmt, ...)
+{
+    char buf[256];
+    va_list ap;
+    int n;
+
+    if (fmt == NULL) {
+        return -1;
+    }
+
+    va_start(ap, fmt);
+    n = vsnprintf(buf, sizeof(buf), fmt, ap);
+    va_end(ap);
+
+    if (n < 0) {
+        return n;
+    }
+
+    return _cdc_out(buf, sizeof(buf));
+}
+
 static void cmd_usage(void)
 {
-    terminal_write("\r\n"
+    _write("\r\n"
                    "Commands:\r\n"
                    "  list\r\n"
                    "  read <bank>:<pin>\r\n"
@@ -83,14 +136,14 @@ static void cmd_usage(void)
 
 static void cmd_list(void)
 {
-    terminal_write("\r\nGPIOs:\r\n");
+    _write("\r\nGPIOs:\r\n");
 
     size_t bankcount = hal_gpio_bankcount();
     for (uint8_t bankid = 0; bankid < bankcount; ++bankid) {
 
         unsigned int pincount = hal_gpio_bank_pincount(bankid);
         const char *name = hal_gpio_bank_name(bankid);
-        terminal_write("  Bank %u (%s), %u pins\r\n",
+        _write("  Bank %u (%s), %u pins\r\n",
                        bankid,
                        name != NULL ? name : "(unnamed)",
                        pincount);
@@ -103,7 +156,7 @@ static void cmd_list(void)
             int rc_fn = hal_gpio_get_function(bankid, (uint8_t) pin, &fn);
             int rc_md = hal_gpio_get_mode(bankid, (uint8_t) pin, &mode);
 
-            terminal_write("    %u:%u  value=%s  function=%s  mode=%s",
+            _write("    %u:%u  value=%s  function=%s  mode=%s",
                            (unsigned) bankid,
                            pin,
                            (rc_val == HAL_GPIO_OK) ? (value ? "1" : "0") : "?",
@@ -111,20 +164,20 @@ static void cmd_list(void)
                            (rc_md == HAL_GPIO_OK) ? hal_gpio_mode_name(mode) : "?");
 
             if (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK || rc_md != HAL_GPIO_OK) {
-                terminal_write("  [");
+                _write("  [");
                 if (rc_val != HAL_GPIO_OK) {
-                    terminal_write("read=%d", rc_val);
+                    _write("read=%d", rc_val);
                 }
                 if (rc_fn != HAL_GPIO_OK) {
-                    terminal_write("%sgetfn=%d", (rc_val != HAL_GPIO_OK) ? " " : "", rc_fn);
+                    _write("%sgetfn=%d", (rc_val != HAL_GPIO_OK) ? " " : "", rc_fn);
                 }
                 if (rc_md != HAL_GPIO_OK) {
-                    terminal_write("%sgetmode=%d", (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK) ? " " : "", rc_md);
+                    _write("%sgetmode=%d", (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK) ? " " : "", rc_md);
                 }
-                terminal_write("]");
+                _write("]");
             }
 
-            terminal_write("\r\n");
+            _write("\r\n");
         }
     }
 }
@@ -135,11 +188,11 @@ static void cmd_read(uint8_t bank, uint8_t pin)
     int rc = hal_gpio_read(bank, pin, &value);
 
     if (rc != HAL_GPIO_OK) {
-        terminal_write("ERR read %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _write("ERR read %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
-    terminal_write("%u\r\n", value ? 1u : 0u);
+    _write("%u\r\n", value ? 1u : 0u);
 }
 
 static void cmd_write(uint8_t bank, uint8_t pin, bool value)
@@ -147,27 +200,27 @@ static void cmd_write(uint8_t bank, uint8_t pin, bool value)
     int rc = hal_gpio_write(bank, pin, value);
 
     if (rc != HAL_GPIO_OK) {
-        terminal_write("ERR write %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _write("ERR write %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
-    terminal_write("OK\r\n");
+    _write("OK\r\n");
 }
 
 static void cmd_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gpio_mode_t mode)
 {
     int rc = hal_gpio_set_function(bank, pin, fn);
     if (rc != HAL_GPIO_OK) {
-        terminal_write("ERR function %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _write("ERR function %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
     rc = hal_gpio_set_mode(bank, pin, mode);
     if (rc != HAL_GPIO_OK) {
-        terminal_write("ERR mode %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _write("ERR mode %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
-    terminal_write("OK\r\n");
+    _write("OK\r\n");
 }
 
 /* called when return is pressed in the terminal to process a command */
@@ -231,78 +284,11 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
     return 1;
 }
 
-/* regularly read & process input from terminal (if any) */
-void terminal_task(void)
-{
-    if (tud_cdc_connected()) {
-        uint8_t buf[64];
-        uint32_t n;
-
-        if (!s_cdc_ready) {
-            s_cdc_ready = true;
-            (void)microrl_clear_terminal(&s_rl);
-        }
-
-        while ((n = tud_cdc_read(buf, sizeof(buf))) > 0) {
-            (void)microrl_processing_input(&s_rl, buf, n);
-        }
-    } else {
-        s_cdc_ready = false;
-    }
-}
-
-/* printf to terminal */
-int terminal_write(const char *fmt, ...)
-{
-    char buf[256];
-    va_list ap;
-    int n;
-
-    if (fmt == NULL) {
-        return -1;
-    }
-
-    va_start(ap, fmt);
-    n = vsnprintf(buf, sizeof(buf), fmt, ap);
-    va_end(ap);
-
-    if (n < 0) {
-        return n;
-    }
-
-    // Send only what fits in the local buffer, but don't silently overrun.
-    size_t len = strnlen(buf, sizeof(buf));
-    if (!tud_cdc_connected() || len == 0) {
-        return 0;
-    }
-
-    // TinyUSB CDC write can also be limited by FIFO space.
-    size_t off = 0;
-    while (off < len) {
-        uint32_t space = tud_cdc_write_available();
-        if (space == 0) {
-            tud_task(); // or just return and retry later if you prefer non-blocking
-            continue;
-        }
-
-        size_t chunk = len - off;
-        if (chunk > space) {
-            chunk = space;
-        }
-
-        tud_cdc_write(buf + off, (uint32_t)chunk);
-        off += chunk;
-    }
-
-    tud_cdc_write_flush();
-    return (int)len;
-}
-
-/* wrapper to register terminal_write() with microrl */
+/* wrapper to register _write() with microrl */
 static int terminal_out(struct microrl *mrl, const char *str)
 {
     MICRORL_UNUSED(mrl);
-    return terminal_write(str);
+    return _write(str);
 }
 
 
@@ -380,6 +366,26 @@ static char **terminal_complete(struct microrl *mrl, int argc, const char * cons
     return (char **) s_no_completion;
 }
 #endif
+
+/* regularly read & process input from terminal (if any) */
+void terminal_task(void)
+{
+    if (tud_cdc_connected()) {
+        uint8_t buf[64];
+        uint32_t n;
+
+        if (!s_cdc_ready) {
+            s_cdc_ready = true;
+            (void)microrl_clear_terminal(&s_rl);
+        }
+
+        while ((n = tud_cdc_read(buf, sizeof(buf))) > 0) {
+            (void)microrl_processing_input(&s_rl, buf, n);
+        }
+    } else {
+        s_cdc_ready = false;
+    }
+}
 
 /* initialize microrl */
 void terminal_init(void)
