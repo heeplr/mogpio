@@ -38,15 +38,6 @@
 typedef struct {
     size_t first_gpio;   /* First GPIO used by this bank. */
     size_t pin_count;    /* Number of pins exposed */
-
-    /*
-     * Bookkeeping lets the driver reject illegal operations cleanly.
-     * The HAL core does not interpret these arrays; they are purely driver
-     * implementation details.
-     */
-    hal_gpio_function_t function[HAL_PICO_PINS];
-    hal_gpio_mode_t mode[HAL_PICO_PINS];
-    bool configured[HAL_PICO_PINS];
 } hal_gpio_pico_ctx_t;
 
 

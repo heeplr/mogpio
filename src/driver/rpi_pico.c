@@ -28,8 +28,8 @@
  * Backend for the Pico's built-in GPIO pins.
  *
  * This driver is deliberately straightforward: each HAL pin maps directly to
- * one physical Pico GPIO. The driver tracks the configured function for each
- * pin so it can reject invalid operations such as writing to an input.
+ * one physical Pico GPIO. The driver rejects invalid operations such as writing
+ * to an input.
  */
 
 #include <string.h>
@@ -67,14 +67,6 @@ static int pico_init(void *vctx)
         return HAL_GPIO_ERR_INVAL;
     }
 
-    /*
-     * On init we mark every HAL pin as deconfigured. The application must call
-     * hal_gpio_pin_config() explicitly for each pin it wants to use.
-     */
-    memset(ctx->function, 0, sizeof(ctx->function));
-    memset(ctx->mode, 0, sizeof(ctx->mode));
-    memset(ctx->configured, 0, sizeof(ctx->configured));
-
     return HAL_GPIO_OK;
 }
 
@@ -91,8 +83,6 @@ static int pico_deinit(void *vctx)
      */
     for (size_t pin = 0; pin < ctx->pin_count && pin < HAL_PICO_PINS; ++pin) {
         gpio_deinit(gpio_number(ctx, pin));
-        ctx->configured[pin] = false;
-        ctx->function[pin] = HAL_GPIO_FN_NONE;
     }
 
     return HAL_GPIO_OK;
@@ -220,8 +210,12 @@ static int pico_read(void *vctx, size_t pin, bool *value)
         return rc;
     }
 
-    INFO("-> pin: %d configured: %d", pin, ctx->configured[pin]);
-    if (!ctx->configured[pin] || ctx->function[pin] == HAL_GPIO_FN_NONE) {
+    hal_gpio_function_t fn;
+    rc = pico_get_function(ctx, pin, &fn);
+    if(rc != HAL_GPIO_OK) {
+        return rc;
+    }
+    if (fn == HAL_GPIO_FN_NONE) {
         return HAL_GPIO_ERR_STATE;
     }
 
@@ -241,7 +235,12 @@ static int pico_write(void *vctx, size_t pin, bool value)
         return rc;
     }
 
-    if (!ctx->configured[pin] || ctx->function[pin] != HAL_GPIO_FN_OUTPUT) {
+    hal_gpio_function_t fn;
+    rc = pico_get_function(ctx, pin, &fn);
+    if(rc != HAL_GPIO_OK) {
+        return rc;
+    }
+    if (fn != HAL_GPIO_FN_OUTPUT) {
         return HAL_GPIO_ERR_UNSUPPORTED;
     }
 
