@@ -34,6 +34,7 @@
 #include "hal_gpio.h"
 #include "hal_gpio_layout.h"
 #include "microrl.h"
+#include "ulog.h"
 #include "tusb.h"
 #include "util.h"
 
@@ -101,7 +102,7 @@ static int _cdc_out(char *buf, size_t bufsize) {
 }
 
 /* printf to terminal */
-static int _write(const char *fmt, ...)
+static int _printf(const char *fmt, ...)
 {
     char buf[256];
     va_list ap;
@@ -122,9 +123,21 @@ static int _write(const char *fmt, ...)
     return _cdc_out(buf, sizeof(buf));
 }
 
+/* logging output handler that will output to the terminal */
+static void _log_output_handler(ulog_event *ev, void *arg) {
+    (void) arg;
+
+    static char buffer[256];
+    int result = ulog_event_to_cstr(ev, buffer, sizeof(buffer));
+    if (result == 0) {
+        _cdc_out(buffer, sizeof(buffer));
+        _cdc_out("\r\n", 2);
+    }
+}
+
 static void cmd_usage(void)
 {
-    _write("\r\n"
+    _printf("\r\n"
                    "Commands:\r\n"
                    "  list\r\n"
                    "  read <bank>:<pin>\r\n"
@@ -136,14 +149,14 @@ static void cmd_usage(void)
 
 static void cmd_list(void)
 {
-    _write("\r\nGPIOs:\r\n");
+    _printf("\r\nGPIOs:\r\n");
 
     size_t bankcount = hal_gpio_bankcount();
     for (uint8_t bankid = 0; bankid < bankcount; ++bankid) {
 
         unsigned int pincount = hal_gpio_bank_pincount(bankid);
         const char *name = hal_gpio_bank_name(bankid);
-        _write("  Bank %u (%s), %u pins\r\n",
+        _printf("  Bank %u (%s), %u pins\r\n",
                        bankid,
                        name != NULL ? name : "(unnamed)",
                        pincount);
@@ -156,7 +169,7 @@ static void cmd_list(void)
             int rc_fn = hal_gpio_get_function(bankid, (uint8_t) pin, &fn);
             int rc_md = hal_gpio_get_mode(bankid, (uint8_t) pin, &mode);
 
-            _write("    %u:%u  value=%s  function=%s  mode=%s",
+            _printf("    %u:%u  value=%s  function=%s  mode=%s",
                            (unsigned) bankid,
                            pin,
                            (rc_val == HAL_GPIO_OK) ? (value ? "1" : "0") : "?",
@@ -164,20 +177,20 @@ static void cmd_list(void)
                            (rc_md == HAL_GPIO_OK) ? hal_gpio_mode_name(mode) : "?");
 
             if (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK || rc_md != HAL_GPIO_OK) {
-                _write("  [");
+                _printf("  [");
                 if (rc_val != HAL_GPIO_OK) {
-                    _write("read=%d", rc_val);
+                    _printf("read=%d", rc_val);
                 }
                 if (rc_fn != HAL_GPIO_OK) {
-                    _write("%sgetfn=%d", (rc_val != HAL_GPIO_OK) ? " " : "", rc_fn);
+                    _printf("%sgetfn=%d", (rc_val != HAL_GPIO_OK) ? " " : "", rc_fn);
                 }
                 if (rc_md != HAL_GPIO_OK) {
-                    _write("%sgetmode=%d", (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK) ? " " : "", rc_md);
+                    _printf("%sgetmode=%d", (rc_val != HAL_GPIO_OK || rc_fn != HAL_GPIO_OK) ? " " : "", rc_md);
                 }
-                _write("]");
+                _printf("]");
             }
 
-            _write("\r\n");
+            _printf("\r\n");
         }
     }
 }
@@ -188,11 +201,11 @@ static void cmd_read(uint8_t bank, uint8_t pin)
     int rc = hal_gpio_read(bank, pin, &value);
 
     if (rc != HAL_GPIO_OK) {
-        _write("ERR read %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _printf("ERR read %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
-    _write("%u\r\n", value ? 1u : 0u);
+    _printf("%u\r\n", value ? 1u : 0u);
 }
 
 static void cmd_write(uint8_t bank, uint8_t pin, bool value)
@@ -200,27 +213,27 @@ static void cmd_write(uint8_t bank, uint8_t pin, bool value)
     int rc = hal_gpio_write(bank, pin, value);
 
     if (rc != HAL_GPIO_OK) {
-        _write("ERR write %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _printf("ERR write %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
-    _write("OK\r\n");
+    _printf("OK\r\n");
 }
 
 static void cmd_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gpio_mode_t mode)
 {
     int rc = hal_gpio_set_function(bank, pin, fn);
     if (rc != HAL_GPIO_OK) {
-        _write("ERR function %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _printf("ERR function %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
 
     rc = hal_gpio_set_mode(bank, pin, mode);
     if (rc != HAL_GPIO_OK) {
-        _write("ERR mode %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
+        _printf("ERR mode %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
         return;
     }
-    _write("OK\r\n");
+    _printf("OK\r\n");
 }
 
 /* called when return is pressed in the terminal to process a command */
@@ -284,11 +297,11 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
     return 1;
 }
 
-/* wrapper to register _write() with microrl */
+/* wrapper to register _printf() with microrl */
 static int terminal_out(struct microrl *mrl, const char *str)
 {
     MICRORL_UNUSED(mrl);
-    return _write(str);
+    return _printf(str);
 }
 
 
@@ -390,6 +403,9 @@ void terminal_task(void)
 /* initialize microrl */
 void terminal_init(void)
 {
+    // register terminal logging output handler
+    ulog_output_add(_log_output_handler, NULL, ULOG_LEVEL_TRACE);
+
     microrl_init(&s_rl, terminal_out, terminal_execute);
 
 #if MICRORL_CFG_USE_COMPLETE

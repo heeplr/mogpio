@@ -34,7 +34,7 @@
 
 #include <string.h>
 
-#include "logger.h"
+#include "ulog.h"
 #include "hal_gpio.h"
 #include "hal_gpio_layout.h"
 #include "rpi_pico.h"
@@ -98,7 +98,7 @@ static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
 
     const size_t gpio = gpio_number(ctx, pin);
 
-    INFO("pin %d, func: %d", pin, function);
+    ulog_info("pin %d, func: %d", pin, function);
 
     if (function == HAL_GPIO_FN_NONE) {
         /* NONE means “release the pin”. */
@@ -126,7 +126,7 @@ static int pico_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
 
     const size_t gpio = gpio_number(ctx, pin);
 
-    INFO("pin %d, mode: %d", pin, mode);
+    ulog_info("pin %d, mode: %d", pin, mode);
 
     switch (mode) {
         case HAL_GPIO_MODE_PULL_UP:

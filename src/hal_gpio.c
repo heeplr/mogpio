@@ -32,6 +32,7 @@
 
 #include "hal_gpio.h"
 #include "hal_gpio_layout.h"
+#include "ulog.h"
 
 
 /* initialization state */

@@ -24,11 +24,14 @@
  * This file is part of the moGPIO firmware.
  */
 
-#include "hardware/gpio.h"
+#include <string.h>
+#include "tusb.h"
+#include "ulog.h"
 
+#include "hardware/gpio.h"
 #include "usbio.h"
 #include "hal_gpio.h"
-#include "logger.h"
+
 
 /* create 32 bit pinmap with available pins' bit set */
 static uint32_t pin_bmap(uint8_t bankid)
@@ -54,18 +57,18 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
 
     switch (mode) {
         case USBIO_GPIO_PINMOD_INPUT:
-            INFO("pin %d -> INPUT", pin);
+            ulog_debug("pin %d -> INPUT", pin);
             f = HAL_GPIO_FN_INPUT;
             break;
 
         case USBIO_GPIO_PINMOD_OUTPUT:
-            INFO("pin %d -> OUTPUT", pin);
+            ulog_debug("pin %d -> OUTPUT", pin);
             f = HAL_GPIO_FN_OUTPUT;
             break;
 
         /* no change */
         default:
-            ERROR("unknown pin mode: %d", mode);
+            ulog_error("unknown pin mode: %d", mode);
             f = HAL_GPIO_FN_NOCHANGE;
             break;
     }
@@ -108,18 +111,18 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
     switch(cmd)
     {
         case USBIO_CTRLCMD_HS:
-            INFO("CTRL: HS");
+            ulog_debug("CTRL: HS");
             *answer_len = 0;
             return true;
 
         case USBIO_CTRLCMD_PROTVER:
-            INFO("CTRL: PROTVER");
+            ulog_debug("CTRL: PROTVER");
             buf[0] = 1;
             *answer_len = 1;
             return true;
 
         case USBIO_CTRLCMD_FWVER:
-            INFO("CTRL: FWVER");
+            ulog_debug("CTRL: FWVER");
             buf[0]=1;
             buf[1]=0;
             buf[2]=0;
@@ -131,7 +134,7 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
 
         case USBIO_CTRLCMD_ENUMGPIO:
         {
-            INFO("CTRL: ENUMGPIO");
+            ulog_debug("CTRL: ENUMGPIO");
             typedef struct {
                 uint8_t id;
                 uint8_t pins;
@@ -154,12 +157,12 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
         }
 
         case USBIO_CTRLCMD_ENUMI2C:
-            INFO("CTRL: ENUMI2C");
+            ulog_debug("CTRL: ENUMI2C");
             *answer_len = 0;
             return true;
 
         default:
-            ERROR("CTRL: unknown cmd: %d", cmd);
+            ulog_error("CTRL: unknown cmd: %d", cmd);
             break;
     }
 
@@ -186,7 +189,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             resp->len = 0;
             resp->hdr.flags = USBIO_PKTFLAG_CMP;
 
-            INFO(
+            ulog_debug(
                 "GPIO: INIT bank: %d pin: %d config: %d",
                 p->bankid, p->pin, p->config
             );
@@ -201,7 +204,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             usbio_gpio_rw_t *in = (void*) req->data;
             usbio_gpio_rw_t out = { 0 };
 
-            INFO("GPIO: READ bank: %d pin: %d", in->bankid, in->pin);
+            ulog_debug("GPIO: READ bank: %d pin: %d", in->bankid, in->pin);
 
             /* read value of that pin */
             bool value;
@@ -218,7 +221,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             resp->len = sizeof(out);
 
             if(ret != HAL_GPIO_OK) {
-                ERROR("GPIO: READ error: %d", ret);
+                ulog_error("GPIO: READ error: %d", ret);
                 goto _hp_error;
             }
 
@@ -235,14 +238,14 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
 
             uint32_t mask = 1u << in->pin;
             bool high = (in->value & mask) != 0;
-            INFO("GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
+            ulog_debug("GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
             if(hal_gpio_write((size_t) in->bankid, (size_t) in->pin, high) != HAL_GPIO_OK)
                 goto _hp_error;
             break;
         }
 
         default:
-            ERROR("GPIO: unknown cmd: %d", req->hdr.cmd);
+            ulog_error("GPIO: unknown cmd: %d", req->hdr.cmd);
             goto _hp_error;
     }
 
@@ -270,7 +273,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
     // Used to test the direction
     bool dir_in = (request->bmRequestType_bit.direction == TUSB_DIR_IN) ? true : false;
 
-    INFO("Control transfer: if=0x%02x stage=%d req=0x%02x type=0x%02x dir=%s wValue=0x%04x wIndex=0x%04x wLength=%d",
+    ulog_debug("Control transfer: if=0x%02x stage=%d req=0x%02x type=0x%02x dir=%s wValue=0x%04x wIndex=0x%04x wLength=%d",
         request->wIndex,
         stage,
         request->bRequest,
@@ -281,7 +284,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
         request->wLength);
 
     if (request->bmRequestType_bit.type != TUSB_REQ_TYPE_VENDOR) {
-        ERROR("type != VENDOR received: %d", request->bmRequestType_bit.type);
+        ulog_error("type != VENDOR received: %d", request->bmRequestType_bit.type);
         return false;
     }
 
@@ -296,12 +299,12 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
 
             /* Stage 1: SETUP -> prepare buffer */
             case CONTROL_STAGE_SETUP:
-                INFO("OUT: CONTROL_STAGE_SETUP");
+                ulog_debug("OUT: CONTROL_STAGE_SETUP");
                 return tud_control_xfer(rhport, request, &ctrl_req, request->wLength);
 
             /* Stage 2: DATA -> receive */
             case CONTROL_STAGE_DATA:
-                INFO("OUT: CONTROL_STAGE_DATA (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
+                ulog_debug("OUT: CONTROL_STAGE_DATA (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
 
                 uint16_t len = 0;
                 memset(&ctrl_resp, 0, sizeof(ctrl_resp));
@@ -309,7 +312,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                 switch(ctrl_req.hdr.type) {
 
                     case USBIO_PKTTYPE_CTRL:
-                        INFO("OUT: CONTROL_STAGE_SETUP: CTRL packet");
+                        ulog_debug("OUT: CONTROL_STAGE_SETUP: CTRL packet");
                         if(!handle_ctrl(ctrl_req.hdr.cmd, ctrl_resp.data, &len))
                             return false;
 
@@ -320,12 +323,12 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                         break;
 
                     case USBIO_PKTTYPE_GPIO:
-                        INFO("OUT: CONTROL_STAGE_SETUP: GPIO packet");
+                        ulog_debug("OUT: CONTROL_STAGE_SETUP: GPIO packet");
                         handle_gpio(&ctrl_req, &ctrl_resp);
                         break;
 
                     default:
-                        INFO("OUT: CONTROL_STAGE_DATA: unknown packet type: %d", ctrl_req.hdr.type);
+                        ulog_debug("OUT: CONTROL_STAGE_DATA: unknown packet type: %d", ctrl_req.hdr.type);
                         return false;
                 }
 
@@ -335,11 +338,11 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
 
             /* Stage 2: ACK -> DATA received, now process */
             case CONTROL_STAGE_ACK:
-                INFO("OUT: CONTROL_STAGE_ACK (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
+                ulog_debug("OUT: CONTROL_STAGE_ACK (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
                 return true;
 
             default:
-                ERROR("OUT: unknown stage: %d", stage);
+                ulog_error("OUT: unknown stage: %d", stage);
                 return false;
         }
     }
@@ -354,7 +357,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
         switch (stage) {
 
             case CONTROL_STAGE_SETUP:
-                INFO("IN: CONTROL_STAGE_SETUP");
+                ulog_debug("IN: CONTROL_STAGE_SETUP");
                 /* no answer? */
                 if(!(ctrl_resp.hdr.flags & USBIO_PKTFLAG_RSP)) {
                     return false;
@@ -365,15 +368,15 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                                         sizeof(usbio_hdr_t) + 1 + ctrl_resp.len);
 
             case CONTROL_STAGE_DATA:
-                INFO("IN: CONTROL_STAGE_DATA");
+                ulog_debug("IN: CONTROL_STAGE_DATA");
                 return true;
 
             case CONTROL_STAGE_ACK:
-                INFO("IN: CONTROL_STAGE_ACK");
+                ulog_debug("IN: CONTROL_STAGE_ACK");
                 return true;
 
             default:
-                ERROR("IN: unknown stage: %d", stage);
+                ulog_error("IN: unknown stage: %d", stage);
                 return false;
 
         }

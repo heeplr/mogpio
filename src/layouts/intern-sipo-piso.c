@@ -51,7 +51,7 @@
 
 /* raspberry pico internal GPIOs  */
 static hal_gpio_pico_ctx_t s_pico_ctx = {
-#ifdef DEBUG_OUT
+#ifdef LOG_UART
     .first_gpio = 2, /* GPIO0 and GPIO1 used for UART0 */
 #else
     .first_gpio = 0,

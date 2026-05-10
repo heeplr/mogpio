@@ -24,10 +24,17 @@
  * This file is part of the moGPIO firmware.
  */
 
-#include "logger.h"
+#ifdef PLATFORM_PICO
+#include "pico/stdlib.h"
+#include "bsp/board.h"
+#endif
+
+
 #include "hal_gpio.h"
 #include "msc_fs.h"
 #include "terminal.h"
+#include "ulog.h"
+
 
 void tud_mount_cb(void) {}
 
@@ -35,19 +42,21 @@ void tud_umount_cb(void) {}
 
 void tud_suspend_cb(bool remote_wakeup_en) {
     (void)remote_wakeup_en;
-    INFO("suspending... remote wakeup: %d", remote_wakeup_en);
+    ulog_info("suspending... remote wakeup: %d", remote_wakeup_en);
 }
 
 void tud_resume_cb(void) {
-    INFO("resumed...");
+    ulog_info("resumed...");
 }
 
 int main(void) {
-    board_init();
 
-#ifdef HAVE_LOGGING
+#ifdef PLATFORM_PICO
+    board_init();
+#ifdef LOG_UART
     stdio_init_all();
-#endif
+#endif /* LOG_UART */
+#endif /* PLATFORM_PICO */
 
     /* initialize GPIO HAL */
     hal_gpio_init();
@@ -57,8 +66,10 @@ int main(void) {
     terminal_init();
     /* TinyUSB init */
     tusb_init();
-
-    INFO("moGPIO initialized");
+    /* configure logging */
+    //~ ulog_color_config(true);
+    //~ ulog_output_level_set_all(ULOG_LEVEL_INFO);
+    ulog_info("moGPIO initialized");
 
     while (1) {
         tud_task();
