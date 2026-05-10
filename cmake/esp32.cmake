@@ -10,6 +10,7 @@ idf_component_register(
          "src/usb_descriptors.c"
          "src/usbio.c"
          "src/msc_fs.c"
+         "src/console.c"
          "src/terminal.c"
          "src/hal_gpio.c"
          "src/util.c"
