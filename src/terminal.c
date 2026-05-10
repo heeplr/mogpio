@@ -24,25 +24,20 @@
  * This file is part of the moGPIO firmware.
  */
 
-#include "terminal.h"
-
-#include <stdbool.h>
-#include <stdio.h>
-#include <stdlib.h>
+#include <stddef.h>
 #include <string.h>
 
+#include "console.h"
+#include "terminal.h"
+#include "ulog.h"
 #include "hal_gpio.h"
 #include "hal_gpio_layout.h"
 #include "microrl.h"
-#include "ulog.h"
-#include "tusb.h"
 #include "util.h"
 
 
 /* microrl context */
 static microrl_t s_rl;
-/* flag whether CDC is ready */
-static bool s_cdc_ready = false;
 
 /* for tab-completion */
 #if MICRORL_CFG_USE_COMPLETE
@@ -71,36 +66,6 @@ static const char *s_complete_matches[64];
 #endif
 
 
-/* write string to cdc */
-static int _cdc_out(char *buf, size_t bufsize) {
-    // Send only what fits in the local buffer, but don't silently overrun.
-    size_t len = strnlen(buf, bufsize);
-    if (!tud_cdc_connected() || len == 0) {
-        return 0;
-    }
-
-    // TinyUSB CDC write can also be limited by FIFO space.
-    size_t off = 0;
-    while (off < len) {
-        uint32_t space = tud_cdc_write_available();
-        if (space == 0) {
-            tud_task(); // or just return and retry later if you prefer non-blocking
-            continue;
-        }
-
-        size_t chunk = len - off;
-        if (chunk > space) {
-            chunk = space;
-        }
-
-        tud_cdc_write(buf + off, (uint32_t)chunk);
-        off += chunk;
-    }
-
-    tud_cdc_write_flush();
-    return (int)len;
-}
-
 /* printf to terminal */
 static int _printf(const char *fmt, ...)
 {
@@ -120,19 +85,7 @@ static int _printf(const char *fmt, ...)
         return n;
     }
 
-    return _cdc_out(buf, sizeof(buf));
-}
-
-/* logging output handler that will output to the terminal */
-static void _log_output_handler(ulog_event *ev, void *arg) {
-    (void) arg;
-
-    static char buffer[256];
-    int result = ulog_event_to_cstr(ev, buffer, sizeof(buffer));
-    if (result == 0) {
-        _cdc_out(buffer, sizeof(buffer));
-        _cdc_out("\r\n", 2);
-    }
+    return console_write(buf, sizeof(buf));
 }
 
 static void cmd_usage(void)
@@ -383,29 +336,18 @@ static char **terminal_complete(struct microrl *mrl, int argc, const char * cons
 /* regularly read & process input from terminal (if any) */
 void terminal_task(void)
 {
-    if (tud_cdc_connected()) {
-        uint8_t buf[64];
-        uint32_t n;
+    /* read console input */
+    char buf[64];
+    uint32_t n;
 
-        if (!s_cdc_ready) {
-            s_cdc_ready = true;
-            (void)microrl_clear_terminal(&s_rl);
-        }
-
-        while ((n = tud_cdc_read(buf, sizeof(buf))) > 0) {
-            (void)microrl_processing_input(&s_rl, buf, n);
-        }
-    } else {
-        s_cdc_ready = false;
+    while ((n = console_read_available(buf, sizeof(buf))) > 0) {
+        (void)microrl_processing_input(&s_rl, buf, n);
     }
 }
 
 /* initialize microrl */
 void terminal_init(void)
 {
-    // register terminal logging output handler
-    ulog_output_add(_log_output_handler, NULL, ULOG_LEVEL_TRACE);
-
     microrl_init(&s_rl, terminal_out, terminal_execute);
 
 #if MICRORL_CFG_USE_COMPLETE
@@ -414,6 +356,7 @@ void terminal_init(void)
     static size_t space_left = sizeof(bankpins);
     static char *s = bankpins;
     static size_t completions = 0;
+
     /* walk all banks */
     for(uint8_t b = 0; b < hal_gpio_bankcount(); b++) {
         /* walk all pins */

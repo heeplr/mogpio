@@ -27,8 +27,6 @@
 #ifndef TERMINAL_H
 #define TERMINAL_H
 
-#include <stdarg.h>
-#include <stdint.h>
 
 #ifdef __cplusplus
 extern "C" {
