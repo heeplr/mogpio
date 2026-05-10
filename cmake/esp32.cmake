@@ -13,6 +13,7 @@ idf_component_register(
          "src/terminal.c"
          "src/hal_gpio.c"
          "src/util.c"
+         "microlog/src/ulog.c"
          "microrl-remaster/src/microrl/microrl.c"
     INCLUDE_DIRS "."
 )

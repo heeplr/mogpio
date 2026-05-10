@@ -23,6 +23,7 @@ target_sources(mogpio PUBLIC
     src/hal_gpio.c
     src/util.c
     microrl-remaster/src/microrl/microrl.c
+    microlog/src/ulog.c
 )
 
 if(LAYOUT STREQUAL "intern")

@@ -4,3 +4,6 @@
 [submodule "microrl-remaster"]
 	path = microrl-remaster
 	url = https://github.com/dimmykar/microrl-remaster
+[submodule "microlog"]
+	path = microlog
+	url = https://github.com/an-dr/microlog
