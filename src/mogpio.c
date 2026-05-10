@@ -32,6 +32,7 @@
 
 #include "hal_gpio.h"
 #include "msc_fs.h"
+#include "console.h"
 #include "terminal.h"
 #include "ulog.h"
 
@@ -49,6 +50,19 @@ void tud_resume_cb(void) {
     ulog_info("resumed...");
 }
 
+/* logging output handler that will output to the terminal */
+static void ulog_output_handler(ulog_event *ev, void *arg) {
+    (void) arg;
+
+    static char buffer[256];
+    int result = ulog_event_to_cstr(ev, buffer, sizeof(buffer));
+    if (result == 0) {
+        console_write(buffer, sizeof(buffer));
+        console_write("\r\n", 2);
+    }
+}
+
+
 int main(void) {
 
 #ifdef PLATFORM_PICO
@@ -58,6 +72,8 @@ int main(void) {
 #endif /* LOG_UART */
 #endif /* PLATFORM_PICO */
 
+    /* register terminal logging output handler */
+    ulog_output_add(ulog_output_handler, NULL, ULOG_LEVEL_TRACE);
     /* initialize GPIO HAL */
     hal_gpio_init();
     /* initialize mass storage interface */
@@ -67,8 +83,7 @@ int main(void) {
     /* TinyUSB init */
     tusb_init();
     /* configure logging */
-    //~ ulog_color_config(true);
-    //~ ulog_output_level_set_all(ULOG_LEVEL_INFO);
+    ulog_output_level_set_all(ULOG_LEVEL_INFO);
     ulog_info("moGPIO initialized");
 
     while (1) {
