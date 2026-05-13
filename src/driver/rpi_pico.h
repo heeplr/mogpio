@@ -27,7 +27,7 @@
 #ifndef _RPI_PICO
 #define _RPI_PICO
 
-#ifdef LOG_UART
+#ifdef UART_TERMINAL
 #define HAL_PICO_PINS 28u
 #else
 #define HAL_PICO_PINS 30u

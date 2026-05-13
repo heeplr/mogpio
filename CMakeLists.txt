@@ -7,7 +7,7 @@ set(PLATFORM "pico" CACHE STRING "platform to compile on (pico, esp32)")
 # set board layout (plain by default)
 set(LAYOUT "intern" CACHE STRING "gpio hardware layout")
 # turn on uart log output
-set(LOG_UART off CACHE BOOL "log to uart")
+set(UART_TERMINAL off CACHE BOOL "use first uart as serial terminal")
 
 
 # esp idf
@@ -38,12 +38,12 @@ target_include_directories(mogpio PUBLIC
 target_compile_definitions(mogpio PRIVATE ULOG_BUILD_CONFIG_HEADER_ENABLED=1)
 
 # log to uart aswell?
-if(LOG_UART)
-    target_compile_definitions(mogpio PRIVATE LOG_UART)
+if(UART_TERMINAL)
+    target_compile_definitions(mogpio PRIVATE UART_TERMINAL)
 endif()
 
 # Additional compile options
 target_compile_options(mogpio PRIVATE -Wall -Wextra)
 
 message(STATUS "=============================================================================")
-message(STATUS "building for platform: ${PLATFORM} layout: ${LAYOUT} log to uart: ${LOG_UART}")
+message(STATUS "building for platform: ${PLATFORM} layout: ${LAYOUT} uart terminal: ${UART_TERMINAL}")

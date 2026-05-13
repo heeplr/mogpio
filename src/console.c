@@ -30,14 +30,14 @@
 #include <stddef.h>
 #include <string.h>
 
-#ifdef LOG_UART
+#ifdef UART_TERMINAL
 #include "pico/stdio.h"
 #endif
 
 #include "tusb.h"
 
 
-#ifdef LOG_UART
+#ifdef UART_TERMINAL
 static int _uart_write(const char *buf, size_t bufsize)
 {
     if (buf == NULL || bufsize == 0) {
@@ -114,7 +114,7 @@ int console_write(const char *buf, size_t bufsize)
     }
 
     int n = _cdc_out(buf, bufsize);
-#ifdef LOG_UART
+#ifdef UART_TERMINAL
     n = MAX(_uart_write(buf, bufsize), n);
 #endif
     return n;
@@ -123,7 +123,7 @@ int console_write(const char *buf, size_t bufsize)
 /* read available inputs with descending priority */
 int console_read_available(char *buf, size_t bufsize) {
     int n;
-#ifdef LOG_UART
+#ifdef UART_TERMINAL
     n = _uart_read_available(buf, busize);
     if(n > 0) {
         return n;

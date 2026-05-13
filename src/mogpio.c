@@ -67,9 +67,9 @@ int main(void) {
 
 #ifdef PLATFORM_PICO
     board_init();
-#ifdef LOG_UART
+#ifdef UART_TERMINAL
     stdio_init_all();
-#endif /* LOG_UART */
+#endif /* UART_TERMINAL */
 #endif /* PLATFORM_PICO */
 
     /* register terminal logging output handler */
