@@ -37,8 +37,8 @@ There are three ways moGPIO exposes GPIOs:
 ## 1. USBIO Protocol
 
 moGPIO will show up as /dev/gpiochipX[^1] once you plug it in, ready to use.
-It's compatible to all available applications that build upon libgpiod.
-(e.g. https://docs.kernel.org/driver-api/driver/drivers-on-gpio.html).
+It's compatible to most applications that build upon libgpiod.
+(e.g. https://docs.kernel.org/driver-api/gpio/drivers-on-gpio.html).
 
 moGPIO uses the [usbio](https://github.com/intel/usbio-drivers) driver that
 should come with any linux kernel >=6.18.x
