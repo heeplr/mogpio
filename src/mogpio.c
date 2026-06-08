@@ -80,6 +80,7 @@ int main(void) {
     ulog_topic_add("msc", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
     ulog_topic_add("terminal", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
     ulog_topic_add("driver", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
+    ulog_topic_add("hal", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
     /* initialize GPIO HAL */
     hal_gpio_init();
     /* initialize mass storage interface */

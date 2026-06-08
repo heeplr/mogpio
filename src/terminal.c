@@ -100,6 +100,8 @@ static void cmd_usage(void)
     _printf(" terminal:\t%s\r\n", ulog_level_to_string(loglevel));
     ulog_topic_level_get("driver", &loglevel);
     _printf(" driver:\t%s\r\n", ulog_level_to_string(loglevel));
+    ulog_topic_level_get("hal", &loglevel);
+    _printf(" hal:\t\t%s\r\n", ulog_level_to_string(loglevel));
 
     _printf("\r\n"
        "Commands:\r\n"
@@ -110,7 +112,7 @@ static void cmd_usage(void)
     _printf(
        "    function: none|input|output\r\n"
        "    mode: pull_up|pull_down|pushpull\r\n"
-       "  log_level <all|usbio|msc|terminal|driver|all> <trace|debug|info|warn|error|fatal>\r\n");
+       "  log_level <all|usbio|msc|terminal|driver|hal|all> <trace|debug|info|warn|error|fatal>\r\n");
 }
 
 static int cmd_list(int argc, const char * const *argv)
@@ -202,8 +204,6 @@ static int cmd_write(int argc, const char * const *argv)
             ulog_topic_error("terminal", "failed to write bank/pin %u:%u (result: %d)", bank, pin, rc);
             return 1;
         }
-
-        _printf("OK\r\n");
         return 0;
     }
 
@@ -251,7 +251,6 @@ static int cmd_config(int argc, const char * const *argv)
         ulog_topic_error("terminal", "failed to set mode of bank/pin %u:%u (result: %d)", (unsigned)bank, (unsigned)pin, rc);
         return 1;
     }
-    _printf("OK\r\n");
     return 0;
 }
 
@@ -287,6 +286,7 @@ static int cmd_log_level(int argc, const char * const *argv)
             ulog_topic_level_set("msc", level);
             ulog_topic_level_set("terminal", level);
             ulog_topic_level_set("driver", level);
+            ulog_topic_level_set("hal", level);
             return 0;
         }
         else {
