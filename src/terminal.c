@@ -39,33 +39,30 @@
 /* microrl context */
 static microrl_t s_rl;
 
-/* for tab-completion */
-#if MICRORL_CFG_USE_COMPLETE
+/* command dispatcher */
+typedef int (*terminal_cmd_exec_t)(int argc, const char * const *argv);
 
-static char s_cmd_list[]   = "list";
-static char s_cmd_read[]   = "read";
-static char s_cmd_write[]  = "write";
-static char s_cmd_config[] = "config";
+/* one terminal command */
+typedef struct {
+    const char *name;
+    terminal_cmd_exec_t exec;
+    /* tab-completion for max. 5 arguments*/
+    const char *const *choices[5];
+} terminal_cmd_t;
 
-static char s_empty[] = "";
-
-static const char *const s_command_choices[] = {
-    s_cmd_list, s_cmd_read, s_cmd_write, s_cmd_config, "help", "?", NULL
-};
-static const char *const s_pinval_choices[] = {
-    "0", "1", NULL
-};
+/* buffers to hold auto-generated autocompletion choices */
 static const char *s_bank_pin_choices[HAL_GPIO_BANKS_MAX * HAL_GPIO_PINS_MAX + 1];
 static const char *s_function_choices[HAL_GPIO_FN_MAX + 1];
 static const char *s_mode_choices[HAL_GPIO_MODE_MAX + 1];
-static char *const s_no_completion[] = {
-    s_empty, NULL
-};
+static const char *s_boolean_choices[] = { "0", "1", NULL };
 
+/* empty match result */
+static char *const s_no_completion[] = { "", NULL };
 static const char *s_complete_matches[64];
-#endif
 
 
+
+/** helpers */
 /* printf to terminal */
 static int _printf(const char *fmt, ...)
 {
@@ -88,20 +85,39 @@ static int _printf(const char *fmt, ...)
     return console_write(buf, sizeof(buf));
 }
 
+
+/** command functions */
 static void cmd_usage(void)
 {
+    ulog_level loglevel;
+
+    _printf("\r\nloglevel:\r\n");
+    ulog_topic_level_get("usbio", &loglevel);
+    _printf(" usbio:\t\t%s\r\n", ulog_level_to_string(loglevel));
+    ulog_topic_level_get("msc", &loglevel);
+    _printf(" msc:\t\t%s\r\n", ulog_level_to_string(loglevel));
+    ulog_topic_level_get("terminal", &loglevel);
+    _printf(" terminal:\t%s\r\n", ulog_level_to_string(loglevel));
+    ulog_topic_level_get("driver", &loglevel);
+    _printf(" driver:\t%s\r\n", ulog_level_to_string(loglevel));
+
     _printf("\r\n"
-                   "Commands:\r\n"
-                   "  list\r\n"
-                   "  read <bank>:<pin>\r\n"
-                   "  write <bank>:<pin> <0|1>\r\n"
-                   "  config <bank>:<pin> <function> [mode]\r\n"
-                   "    function: none|input|output\r\n"
-                   "    mode: pull_up|pull_down|pushpull\r\n");
+       "Commands:\r\n"
+       "  list\r\n"
+       "  read <bank>:<pin>\r\n"
+       "  write <bank>:<pin> <0|1>\r\n"
+       "  config <bank>:<pin> <function> [mode]\r\n");
+    _printf(
+       "    function: none|input|output\r\n"
+       "    mode: pull_up|pull_down|pushpull\r\n"
+       "  log_level <all|usbio|msc|terminal|driver|all> <trace|debug|info|warn|error|fatal>\r\n");
 }
 
-static void cmd_list(void)
+static int cmd_list(int argc, const char * const *argv)
 {
+    MICRORL_UNUSED(argc);
+    MICRORL_UNUSED(argv);
+
     _printf("\r\nGPIOs:\r\n");
 
     size_t bankcount = hal_gpio_bankcount();
@@ -146,103 +162,24 @@ static void cmd_list(void)
             _printf("\r\n");
         }
     }
+    return 0;
 }
 
-static void cmd_read(uint8_t bank, uint8_t pin)
-{
-    bool value = false;
-    int rc = hal_gpio_read(bank, pin, &value);
-
-    if (rc != HAL_GPIO_OK) {
-        _printf("ERR read %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
-        return;
-    }
-
-    _printf("%u\r\n", value ? 1u : 0u);
-}
-
-static void cmd_write(uint8_t bank, uint8_t pin, bool value)
-{
-    int rc = hal_gpio_write(bank, pin, value);
-
-    if (rc != HAL_GPIO_OK) {
-        _printf("ERR write %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
-        return;
-    }
-
-    _printf("OK\r\n");
-}
-
-static void cmd_config(uint8_t bank, uint8_t pin, hal_gpio_function_t fn, hal_gpio_mode_t mode)
-{
-    int rc = hal_gpio_set_function(bank, pin, fn);
-    if (rc != HAL_GPIO_OK) {
-        _printf("ERR function %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
-        return;
-    }
-
-    rc = hal_gpio_set_mode(bank, pin, mode);
-    if (rc != HAL_GPIO_OK) {
-        _printf("ERR mode %u:%u -> %d\r\n", (unsigned)bank, (unsigned)pin, rc);
-        return;
-    }
-    _printf("OK\r\n");
-}
-
-/* called when return is pressed in the terminal to process a command */
-static int terminal_execute(struct microrl *mrl, int argc, const char * const *argv)
+static int cmd_read(int argc, const char * const *argv)
 {
     size_t bank = 0;
     size_t pin = 0;
 
-    MICRORL_UNUSED(mrl);
-
-    if (argc <= 0 || argv == NULL || argv[0] == NULL || argv[0][0] == '\0') {
-        return 0;
-    }
-
-    if (token_eq(argv[0], "list")) {
-        cmd_list();
-        return 0;
-    }
-
-    if (token_eq(argv[0], "read")) {
-        if (argc != 2 || !parse_bank_pin(argv[1], &bank, &pin)) {
-            cmd_usage();
-            return 1;
-        }
-
-        cmd_read(bank, pin);
-        return 0;
-    }
-
-    if (token_eq(argv[0], "write")) {
+    if (argc == 2 && parse_bank_pin(argv[1], &bank, &pin)) {
         bool value = false;
+        int rc = hal_gpio_read((uint8_t) bank, (uint8_t) pin, &value);
 
-        if (argc != 3 || !parse_bank_pin(argv[1], &bank, &pin) || !parse_value01(argv[2], &value)) {
-            cmd_usage();
+        if (rc != HAL_GPIO_OK) {
+            ulog_topic_error("terminal", "failed to read bank/pin %d:%d (result: %d)", bank, pin, rc);
             return 1;
         }
 
-        cmd_write(bank, pin, value);
-        return 0;
-    }
-
-    if (token_eq(argv[0], "config")) {
-        hal_gpio_function_t fn;
-        hal_gpio_mode_t mode = HAL_GPIO_MODE_NOCHANGE;
-
-        if (argc < 3 || argc > 4 || !parse_bank_pin(argv[1], &bank, &pin) || !parse_function(argv[2], &fn)) {
-            cmd_usage();
-            return 1;
-        }
-
-        if (argc == 4 && !parse_mode(argv[3], &mode)) {
-            cmd_usage();
-            return 1;
-        }
-
-        cmd_config(bank, pin, fn, mode);
+        _printf("%u\r\n", value ? 1u : 0u);
         return 0;
     }
 
@@ -250,15 +187,200 @@ static int terminal_execute(struct microrl *mrl, int argc, const char * const *a
     return 1;
 }
 
-/* wrapper to register _printf() with microrl */
-static int terminal_out(struct microrl *mrl, const char *str)
+static int cmd_write(int argc, const char * const *argv)
 {
-    MICRORL_UNUSED(mrl);
-    return _printf(str);
+    size_t bank = 0;
+    size_t pin = 0;
+    bool value = false;
+
+    if (argc == 3 &&
+        parse_bank_pin(argv[1], &bank, &pin) &&
+        parse_boolean(argv[2], &value)) {
+        int rc = hal_gpio_write(bank, pin, value);
+
+        if (rc != HAL_GPIO_OK) {
+            ulog_topic_error("terminal", "failed to write bank/pin %u:%u (result: %d)", bank, pin, rc);
+            return 1;
+        }
+
+        _printf("OK\r\n");
+        return 0;
+    }
+
+    cmd_usage();
+    return 1;
+
 }
 
+static int cmd_config(int argc, const char * const *argv)
+{
+    size_t bank = 0;
+    size_t pin = 0;
+    hal_gpio_function_t fn;
+    hal_gpio_mode_t mode = HAL_GPIO_MODE_NOCHANGE;
 
-#if MICRORL_CFG_USE_COMPLETE
+    if (argc < 3 || argc > 4) {
+        ulog_topic_error("terminal", "invalid amount of arguments: %d", argc);
+        cmd_usage();
+        return 1;
+    }
+    if(!parse_bank_pin(argv[1], &bank, &pin)) {
+        ulog_topic_error("terminal", "invalid bank/pin: %s", argv[1]);
+        cmd_usage();
+        return 1;
+    }
+    if(!parse_function(argv[2], &fn)) {
+        ulog_topic_error("terminal", "invalid function: %s", argv[2]);
+        cmd_usage();
+        return 1;
+    }
+    if (!parse_mode(argv[3], &mode)) {
+        ulog_topic_error("terminal", "invalid mode: %s", argv[3]);
+        cmd_usage();
+        return 1;
+    }
+
+    int rc = hal_gpio_set_function(bank, pin, fn);
+    if (rc != HAL_GPIO_OK) {
+        ulog_topic_error("terminal", "failed to configure bank/pin %u:%u (result: %d)", (unsigned)bank, (unsigned)pin, rc);
+        return 1;
+    }
+
+    rc = hal_gpio_set_mode(bank, pin, mode);
+    if (rc != HAL_GPIO_OK) {
+        ulog_topic_error("terminal", "failed to set mode of bank/pin %u:%u (result: %d)", (unsigned)bank, (unsigned)pin, rc);
+        return 1;
+    }
+    _printf("OK\r\n");
+    return 0;
+}
+
+static int cmd_log_level(int argc, const char * const *argv)
+{
+    ulog_level level = ULOG_LEVEL_TOTAL;
+
+    if (argc != 3) {
+        ulog_topic_error("terminal", "invalid amount of arguments: %d", argc);
+        cmd_usage();
+        return 1;
+    }
+
+    if (token_eq(argv[2], "trace"))
+        level = ULOG_LEVEL_TRACE;
+    else if (token_eq(argv[2], "debug"))
+        level = ULOG_LEVEL_DEBUG;
+    else if (token_eq(argv[2], "info"))
+        level = ULOG_LEVEL_INFO;
+    else if (token_eq(argv[2], "warn"))
+        level = ULOG_LEVEL_WARN;
+    else if (token_eq(argv[2], "error"))
+        level = ULOG_LEVEL_ERROR;
+    else if (token_eq(argv[2], "fatal"))
+        level = ULOG_LEVEL_FATAL;
+
+    const char *topic = argv[1];
+
+    if (level != ULOG_LEVEL_TOTAL) {
+        /* set level of topic */
+        if (token_eq(topic, "all")) {
+            ulog_topic_level_set("usbio", level);
+            ulog_topic_level_set("msc", level);
+            ulog_topic_level_set("terminal", level);
+            ulog_topic_level_set("driver", level);
+            return 0;
+        }
+        else {
+            ulog_status rc = ulog_topic_level_set(argv[1], level);
+            if(rc == ULOG_STATUS_OK) {
+                return 0;
+            }
+            ulog_topic_error("terminal", "invalid topic: %s", argv[1]);
+        }
+    }
+
+    ulog_topic_error("terminal", "invalid loglevel: %s", argv[2]);
+    cmd_usage();
+    return 1;
+}
+
+/* list of commands */
+static const terminal_cmd_t s_commands[] = {
+    {
+        .name = "list",
+        .exec = cmd_list,
+    },
+    {
+        .name = "read",
+        .exec = cmd_read,
+        .choices = {
+            s_bank_pin_choices,
+        },
+    },
+    {
+        .name = "write",
+        .exec = cmd_write,
+        .choices = {
+            s_bank_pin_choices,
+            s_boolean_choices
+        },
+    },
+    {
+        .name = "config",
+        .exec = cmd_config,
+        .choices = {
+            s_bank_pin_choices,
+            s_function_choices,
+            s_mode_choices,
+        },
+    },
+    {
+        .name = "log_level",
+        .exec = cmd_log_level,
+        .choices = {
+            (const char *const[]) { "all", "usbio", "msc", "terminal", "driver", NULL },
+            (const char *const[]) { "trace", "debug", "info", "warn", "error", "fatal", NULL },
+        },
+    },
+};
+
+/******************************************************************************/
+/* get command by name */
+static const terminal_cmd_t *_find_cmd(const char *name)
+{
+    if (name == NULL) {
+        return NULL;
+    }
+
+    for (size_t i = 0; i < MICRORL_ARRAYSIZE(s_commands); ++i) {
+        if (token_eq(name, s_commands[i].name)) {
+            return &s_commands[i];
+        }
+    }
+
+    return NULL;
+}
+
+/* called when return is pressed in the terminal to process a command */
+static int terminal_execute(struct microrl *mrl, int argc, const char * const *argv)
+{
+    MICRORL_UNUSED(mrl);
+
+    const terminal_cmd_t *cmd;
+
+    if (argc <= 0 || argv == NULL || argv[0] == NULL || argv[0][0] == '\0') {
+        return 0;
+    }
+
+    cmd = _find_cmd(argv[0]);
+    if (cmd != NULL) {
+        return cmd->exec(argc, argv);
+    }
+
+    ulog_topic_warn("terminal", "command %s failed", argv[0]);
+    cmd_usage();
+    return 1;
+}
+
 /* return all matches from a list of choices for an incomplete prefix string */
 static char **terminal_complete_prefix(const char * const* choices, const char *prefix)
 {
@@ -273,65 +395,68 @@ static char **terminal_complete_prefix(const char * const* choices, const char *
     }
 
     if (n == 0) {
-        s_complete_matches[n++] = s_empty;
+        s_complete_matches[n++] = "";
     }
 
     s_complete_matches[n] = NULL;
     return (char **) s_complete_matches;
 }
 
+/* return all main command matches built from s_commands */
+static char **terminal_complete_command_prefix(const char *prefix)
+{
+    size_t prefix_len = strlen(prefix);
+    size_t n = 0;
+
+    for (size_t i = 0; i < MICRORL_ARRAYSIZE(s_commands) &&
+                       n < (MICRORL_ARRAYSIZE(s_complete_matches) - 1u); ++i) {
+        if (strncasecmp(s_commands[i].name, prefix, prefix_len) == 0) {
+            s_complete_matches[n++] = s_commands[i].name;
+        }
+    }
+
+    if (n == 0) {
+        s_complete_matches[n++] = "";
+    }
+
+    s_complete_matches[n] = NULL;
+    return (char **)s_complete_matches;
+}
+
 /* process tab-press for string completion */
 static char **terminal_complete(struct microrl *mrl, int argc, const char * const *argv)
 {
+    const terminal_cmd_t *cmd;
+
     MICRORL_UNUSED(mrl);
 
     /* first command after prompt ? */
     if (argc <= 1) {
-        return terminal_complete_prefix(s_command_choices, argv[0] != NULL ? argv[0] : "");
+        return terminal_complete_command_prefix(argv[0] != NULL ? argv[0] : "");
     }
 
-    /* argument to read command */
-    if (token_eq(argv[0], s_cmd_read)) {
-        /* bank:id */
-        if (argc == 2) {
-            return terminal_complete_prefix(s_bank_pin_choices, argv[1] != NULL ? argv[1] : "");
-        }
+    cmd = _find_cmd(argv[0]);
+    if (cmd == NULL) {
+        return (char **) s_no_completion;
     }
 
-    /* argument to write command */
-    if (token_eq(argv[0], s_cmd_write)) {
-        /* bank:id */
-        if (argc == 2) {
-            return terminal_complete_prefix(s_bank_pin_choices, argv[1] != NULL ? argv[1] : "");
-        }
-        /* value */
-        if (argc == 3) {
-            return terminal_complete_prefix(s_pinval_choices, argv[2] != NULL ? argv[2] : "");
+    /* argv[1] == first argument, so completion index is argc - 1 */
+    if (argc >= 2 && argc <= 5) {
+        const char *const *choices = cmd->choices[argc - 2];
+        if (choices != NULL) {
+            return terminal_complete_prefix(choices, argv[argc - 1] != NULL ? argv[argc - 1] : "");
         }
     }
 
-    /* argument to config command */
-    if (token_eq(argv[0], s_cmd_config)) {
-        /* bank:id */
-        if (argc == 2) {
-            return terminal_complete_prefix(s_bank_pin_choices, argv[1] != NULL ? argv[1] : "");
-        }
-
-        /* pin function */
-        if (argc == 3) {
-            return terminal_complete_prefix(s_function_choices, argv[2] != NULL ? argv[2] : "");
-        }
-
-        /* pin mode */
-        if (argc == 4) {
-            return terminal_complete_prefix(s_mode_choices, argv[3] != NULL ? argv[3] : "");
-        }
-    }
-
-    /* no match */
-    return (char **) s_no_completion;
+    return (char **)s_no_completion;
 }
-#endif
+
+/* wrapper to register _printf() with microrl */
+static int terminal_out(struct microrl *mrl, const char *str)
+{
+    MICRORL_UNUSED(mrl);
+    return _printf(str);
+}
 
 /* regularly read & process input from terminal (if any) */
 void terminal_task(void)
@@ -341,7 +466,7 @@ void terminal_task(void)
     uint32_t n;
 
     while ((n = console_read_available(buf, sizeof(buf))) > 0) {
-        (void)microrl_processing_input(&s_rl, buf, n);
+        (void) microrl_processing_input(&s_rl, buf, n);
     }
 }
 
@@ -350,8 +475,7 @@ void terminal_init(void)
 {
     microrl_init(&s_rl, terminal_out, terminal_execute);
 
-#if MICRORL_CFG_USE_COMPLETE
-    /* initialize bank pin choices */
+    /* initialize bank pin choices for tab completion */
     static char bankpins[512];
     static size_t space_left = sizeof(bankpins);
     static char *s = bankpins;
@@ -373,19 +497,19 @@ void terminal_init(void)
             }
         }
     }
-    /* initialize function string choices */
+    /* initialize function string choices for tab completion */
     hal_gpio_function_t f;
     for(f = 0; f < HAL_GPIO_FN_MAX; f++) {
         s_function_choices[f] = hal_gpio_function_name(f);
     }
     s_function_choices[f] = NULL;
-    /* initialize mode string choices */
+    /* initialize mode string choices for tab completion */
     hal_gpio_mode_t m;
     for(m = 0; m < HAL_GPIO_MODE_MAX; m++) {
         s_mode_choices[m] = hal_gpio_mode_name(m);
     }
     s_mode_choices[m] = NULL;
 
+    /* handler to return completion choices when tab is pressed */
     microrl_set_complete_callback(&s_rl, terminal_complete);
-#endif
 }
