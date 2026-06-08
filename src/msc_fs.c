@@ -254,7 +254,7 @@ static size_t build_pins_text(char *data, size_t capacity) {
             bool value = false;
             int res = hal_gpio_read(bankid, pin, &value);
             if (res != HAL_GPIO_OK) {
-                ulog_error("gpio_read error: %d", res);
+                ulog_topic_error("msc", "gpio_read error: %d", res);
                 used = append_fmt(data, capacity, used, "%u:%u=?\r\n", bankid, pin);
             } else {
                 used = append_fmt(data, capacity, used, "%u:%u=%u\r\n", bankid, pin, value ? 1u : 0u);
@@ -340,7 +340,7 @@ static bool parse_config_line(const char *line, size_t len) {
         return false;
     }
 
-    ulog_info("configuring bank: %lu, pin: %lu, func: %d, mode: %d",
+    ulog_topic_debug("msc", "configuring bank: %lu, pin: %lu, func: %d, mode: %d",
          bankid, pin, function, mode);
 
     if(hal_gpio_set_mode((size_t) bankid, (size_t) pin, mode) != HAL_GPIO_OK) {
@@ -362,7 +362,7 @@ static bool parse_pin_line(const char *line, size_t len) {
 
     char buf[16];
     if (len >= sizeof(buf)) {
-        ulog_error("buffer overflow");
+        ulog_topic_error("msc", "buffer overflow");
         return false;
     }
 
@@ -373,14 +373,14 @@ static bool parse_pin_line(const char *line, size_t len) {
     /* find separators and \0 terminate */
     char *sep = strchr(buf, ':');
     if (!sep) {
-        ulog_error("no : separator found");
+        ulog_topic_error("msc", "no : separator found");
         return false;
     }
     *sep = '\0';
 
     char *eq = strchr(sep + 1, '=');
     if (!eq) {
-        ulog_error("no = separator found");
+        ulog_topic_error("msc", "no = separator found");
         return false;
     }
     *eq = '\0';
@@ -400,25 +400,25 @@ static bool parse_pin_line(const char *line, size_t len) {
 
     /* validate values */
     if (*bank == '\0' || *pin == '\0' || *val == '\0') {
-        ulog_error("empty bank/pin/value");
+        ulog_topic_error("msc", "empty bank/pin/value");
         return false;
     }
 
     /* parse values */
     uint32_t bankid = 0;
     if (!parse_u32(bank, &bankid) || bankid >= (uint32_t) hal_gpio_bankcount()) {
-        ulog_error("failed to parse bank: %s", bank);
+        ulog_topic_error("msc", "failed to parse bank: %s", bank);
         return false;
     }
 
     uint32_t pinid = 0;
     if (!parse_u32(pin, &pinid) || pinid >= (uint32_t) hal_gpio_bank_pincount((size_t) bankid)) {
-        ulog_error("failed to parse pin: %s", pin);
+        ulog_topic_error("msc", "failed to parse pin: %s", pin);
         return false;
     }
 
     if (!(val[0] == '0' || val[0] == '1') || val[1] != '\0') {
-        ulog_error("failed to parse value: %s", val);
+        ulog_topic_error("msc", "failed to parse value: %s", val);
         return false;
     }
     bool value = (val[0] == '1');
@@ -431,12 +431,12 @@ static bool parse_pin_line(const char *line, size_t len) {
         return true;
     }
 
-    ulog_info("setting GPIO bank: %lu, pin: %lu, value: %d",
+    ulog_topic_info("msc", "setting GPIO bank: %lu, pin: %lu, value: %d",
          (unsigned long) bankid, (unsigned long) pinid, value);
 
     int res = hal_gpio_write((size_t) bankid, (size_t) pinid, value);
     if(res < 0) {
-        ulog_error("hal_gpio_write() error: %d", res);
+        ulog_topic_error("msc", "hal_gpio_write() error: %d", res);
     }
 
     return true;
@@ -568,7 +568,7 @@ void sync_to_fatfs() {
     for (uint32_t fid = 0; fid < FILE_COUNT; ++fid) {
         vfile_t *f = &files[fid];
 
-        ulog_debug("fid=%lu cluster=%u lba0=%lu", fid, f->first_cluster, f->data_lba0);
+        ulog_topic_debug("msc", "fid=%lu cluster=%u lba0=%lu", fid, f->first_cluster, f->data_lba0);
 
         /* filesize */
         f->size = (uint32_t)strlen(file_cache[fid]);
@@ -762,7 +762,7 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba,
         return -1;
 
     int fid = find_file_by_lba(lba);
-    ulog_debug("lun: %d lba: %ld offset: %ld bufsize: %ld fid: %d",
+    ulog_topic_debug("msc", "lun: %d lba: %ld offset: %ld bufsize: %ld fid: %d",
         lun, lba, offset, bufsize, fid);
 
     /* upon first block of a READ10 session */
@@ -791,7 +791,7 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba,
         return -1;
     }
 
-    ulog_debug("lun: %d lba: %ld offset: %ld bufsize: %ld",
+    ulog_topic_debug("msc", "lun: %d lba: %ld offset: %ld bufsize: %ld",
         lun, lba, offset, bufsize);
 
     /* copy to ramdisk */
@@ -810,7 +810,7 @@ void tud_msc_write10_complete_cb(uint8_t lun) {
     for (uint32_t fid = 0; fid < FILE_COUNT; ++fid) {
         /* process file contents if they changed */
         if(files[fid].dirty) {
-            ulog_debug("parsing %s", files[fid].name);
+            ulog_topic_debug("msc", "parsing %s", files[fid].name);
             parse_file(file_cache[fid], files[fid].size, files[fid].parser);
             files[fid].dirty = false;
         }

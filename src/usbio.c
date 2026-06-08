@@ -57,18 +57,18 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
 
     switch (mode) {
         case USBIO_GPIO_PINMOD_INPUT:
-            ulog_debug("pin %d -> INPUT", pin);
+            ulog_topic_debug("usbio", "pin %d -> INPUT", pin);
             f = HAL_GPIO_FN_INPUT;
             break;
 
         case USBIO_GPIO_PINMOD_OUTPUT:
-            ulog_debug("pin %d -> OUTPUT", pin);
+            ulog_topic_debug("usbio", "pin %d -> OUTPUT", pin);
             f = HAL_GPIO_FN_OUTPUT;
             break;
 
         /* no change */
         default:
-            ulog_error("unknown pin mode: %d", mode);
+            ulog_topic_error("usbio", "unknown pin mode: %d", mode);
             f = HAL_GPIO_FN_NOCHANGE;
             break;
     }
@@ -111,18 +111,18 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
     switch(cmd)
     {
         case USBIO_CTRLCMD_HS:
-            ulog_debug("CTRL: HS");
+            ulog_topic_debug("usbio", "CTRL: HS");
             *answer_len = 0;
             return true;
 
         case USBIO_CTRLCMD_PROTVER:
-            ulog_debug("CTRL: PROTVER");
+            ulog_topic_debug("usbio", "CTRL: PROTVER");
             buf[0] = 1;
             *answer_len = 1;
             return true;
 
         case USBIO_CTRLCMD_FWVER:
-            ulog_debug("CTRL: FWVER");
+            ulog_topic_debug("usbio", "CTRL: FWVER");
             buf[0]=1;
             buf[1]=0;
             buf[2]=0;
@@ -134,7 +134,7 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
 
         case USBIO_CTRLCMD_ENUMGPIO:
         {
-            ulog_debug("CTRL: ENUMGPIO");
+            ulog_topic_debug("usbio", "CTRL: ENUMGPIO");
             typedef struct {
                 uint8_t id;
                 uint8_t pins;
@@ -157,12 +157,12 @@ static bool handle_ctrl(uint8_t cmd, uint8_t *buf, uint16_t *answer_len)
         }
 
         case USBIO_CTRLCMD_ENUMI2C:
-            ulog_debug("CTRL: ENUMI2C");
+            ulog_topic_debug("usbio", "CTRL: ENUMI2C");
             *answer_len = 0;
             return true;
 
         default:
-            ulog_error("CTRL: unknown cmd: %d", cmd);
+            ulog_topic_error("usbio", "CTRL: unknown cmd: %d", cmd);
             break;
     }
 
@@ -204,7 +204,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             usbio_gpio_rw_t *in = (void*) req->data;
             usbio_gpio_rw_t out = { 0 };
 
-            ulog_debug("GPIO: READ bank: %d pin: %d", in->bankid, in->pin);
+            ulog_topic_debug("usbio", "GPIO: READ bank: %d pin: %d", in->bankid, in->pin);
 
             /* read value of that pin */
             bool value;
@@ -221,7 +221,7 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             resp->len = sizeof(out);
 
             if(ret != HAL_GPIO_OK) {
-                ulog_error("GPIO: READ error: %d", ret);
+                ulog_topic_error("usbio", "GPIO: READ error: %d", ret);
                 goto _hp_error;
             }
 
@@ -238,14 +238,14 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
 
             uint32_t mask = 1u << in->pin;
             bool high = (in->value & mask) != 0;
-            ulog_debug("GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
+            ulog_topic_debug("usbio", "GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
             if(hal_gpio_write((size_t) in->bankid, (size_t) in->pin, high) != HAL_GPIO_OK)
                 goto _hp_error;
             break;
         }
 
         default:
-            ulog_error("GPIO: unknown cmd: %d", req->hdr.cmd);
+            ulog_topic_error("usbio", "GPIO: unknown cmd: %d", req->hdr.cmd);
             goto _hp_error;
     }
 
@@ -273,7 +273,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
     // Used to test the direction
     bool dir_in = (request->bmRequestType_bit.direction == TUSB_DIR_IN) ? true : false;
 
-    ulog_debug("Control transfer: if=0x%02x stage=%d req=0x%02x type=0x%02x dir=%s wValue=0x%04x wIndex=0x%04x wLength=%d",
+    ulog_topic_debug("usbio", "Control transfer: if=0x%02x stage=%d req=0x%02x type=0x%02x dir=%s wValue=0x%04x wIndex=0x%04x wLength=%d",
         request->wIndex,
         stage,
         request->bRequest,
@@ -284,7 +284,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
         request->wLength);
 
     if (request->bmRequestType_bit.type != TUSB_REQ_TYPE_VENDOR) {
-        ulog_error("type != VENDOR received: %d", request->bmRequestType_bit.type);
+        ulog_topic_error("usbio", "type != VENDOR received: %d", request->bmRequestType_bit.type);
         return false;
     }
 
@@ -299,12 +299,12 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
 
             /* Stage 1: SETUP -> prepare buffer */
             case CONTROL_STAGE_SETUP:
-                ulog_debug("OUT: CONTROL_STAGE_SETUP");
+                ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_SETUP");
                 return tud_control_xfer(rhport, request, &ctrl_req, request->wLength);
 
             /* Stage 2: DATA -> receive */
             case CONTROL_STAGE_DATA:
-                ulog_debug("OUT: CONTROL_STAGE_DATA (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
+                ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_DATA (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
 
                 uint16_t len = 0;
                 memset(&ctrl_resp, 0, sizeof(ctrl_resp));
@@ -312,7 +312,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                 switch(ctrl_req.hdr.type) {
 
                     case USBIO_PKTTYPE_CTRL:
-                        ulog_debug("OUT: CONTROL_STAGE_SETUP: CTRL packet");
+                        ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_SETUP: CTRL packet");
                         if(!handle_ctrl(ctrl_req.hdr.cmd, ctrl_resp.data, &len))
                             return false;
 
@@ -323,12 +323,12 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                         break;
 
                     case USBIO_PKTTYPE_GPIO:
-                        ulog_debug("OUT: CONTROL_STAGE_SETUP: GPIO packet");
+                        ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_SETUP: GPIO packet");
                         handle_gpio(&ctrl_req, &ctrl_resp);
                         break;
 
                     default:
-                        ulog_debug("OUT: CONTROL_STAGE_DATA: unknown packet type: %d", ctrl_req.hdr.type);
+                        ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_DATA: unknown packet type: %d", ctrl_req.hdr.type);
                         return false;
                 }
 
@@ -338,11 +338,11 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
 
             /* Stage 2: ACK -> DATA received, now process */
             case CONTROL_STAGE_ACK:
-                ulog_debug("OUT: CONTROL_STAGE_ACK (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
+                ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_ACK (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
                 return true;
 
             default:
-                ulog_error("OUT: unknown stage: %d", stage);
+                ulog_topic_error("usbio", "OUT: unknown stage: %d", stage);
                 return false;
         }
     }
@@ -357,7 +357,7 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
         switch (stage) {
 
             case CONTROL_STAGE_SETUP:
-                ulog_debug("IN: CONTROL_STAGE_SETUP");
+                ulog_topic_debug("usbio", "IN: CONTROL_STAGE_SETUP");
                 /* no answer? */
                 if(!(ctrl_resp.hdr.flags & USBIO_PKTFLAG_RSP)) {
                     return false;
@@ -368,15 +368,15 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                                         sizeof(usbio_hdr_t) + 1 + ctrl_resp.len);
 
             case CONTROL_STAGE_DATA:
-                ulog_debug("IN: CONTROL_STAGE_DATA");
+                ulog_topic_debug("usbio", "IN: CONTROL_STAGE_DATA");
                 return true;
 
             case CONTROL_STAGE_ACK:
-                ulog_debug("IN: CONTROL_STAGE_ACK");
+                ulog_topic_debug("usbio", "IN: CONTROL_STAGE_ACK");
                 return true;
 
             default:
-                ulog_error("IN: unknown stage: %d", stage);
+                ulog_topic_error("usbio", "IN: unknown stage: %d", stage);
                 return false;
 
         }

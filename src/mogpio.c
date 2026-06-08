@@ -74,6 +74,12 @@ int main(void) {
 
     /* register terminal logging output handler */
     ulog_output_add(ulog_output_handler, NULL, ULOG_LEVEL_TRACE);
+    ulog_output_level_set_all(ULOG_LEVEL_TRACE);
+    /* add logging topics */
+    ulog_topic_add("usbio", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
+    ulog_topic_add("msc", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
+    ulog_topic_add("terminal", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
+    ulog_topic_add("driver", ULOG_OUTPUT_ALL, ULOG_LEVEL_WARN);
     /* initialize GPIO HAL */
     hal_gpio_init();
     /* initialize mass storage interface */
@@ -82,8 +88,7 @@ int main(void) {
     terminal_init();
     /* TinyUSB init */
     tusb_init();
-    /* configure logging */
-    ulog_output_level_set_all(ULOG_LEVEL_INFO);
+
     ulog_info("moGPIO initialized");
 
     while (1) {

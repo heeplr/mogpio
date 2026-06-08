@@ -52,9 +52,11 @@ static inline size_t gpio_number(const hal_gpio_pico_ctx_t *ctx, size_t pin)
 static int pico_validate_pin(const hal_gpio_pico_ctx_t *ctx, size_t pin)
 {
     if (ctx == NULL) {
+        ulog_topic_error("driver", "null ctx");
         return HAL_GPIO_ERR_INVAL;
     }
     if (pin >= ctx->pin_count || pin >= HAL_PICO_PINS) {
+        ulog_topic_error("driver", "pin: %d, pincount: %d, HAL_PICO_PINS: %d", pin, ctx->pin_count, HAL_PICO_PINS);
         return HAL_GPIO_ERR_BOUNDS;
     }
     return HAL_GPIO_OK;
@@ -64,6 +66,7 @@ static int pico_init(void *vctx)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     if (ctx == NULL) {
+        ulog_topic_error("driver", "null ctx");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -74,6 +77,7 @@ static int pico_deinit(void *vctx)
 {
     hal_gpio_pico_ctx_t *ctx = (hal_gpio_pico_ctx_t *)vctx;
     if (ctx == NULL) {
+        ulog_topic_error("driver", "null ctx");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -98,7 +102,7 @@ static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
 
     const size_t gpio = gpio_number(ctx, pin);
 
-    ulog_info("pin %d, func: %d", pin, function);
+    ulog_topic_debug("driver", "pin %d, func: %d", pin, function);
 
     if (function == HAL_GPIO_FN_NONE) {
         /* NONE means “release the pin”. */
@@ -107,6 +111,7 @@ static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
     }
 
     if (function != HAL_GPIO_FN_INPUT && function != HAL_GPIO_FN_OUTPUT) {
+        ulog_topic_error("driver", "invalid function: %d", function);
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -126,7 +131,7 @@ static int pico_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
 
     const size_t gpio = gpio_number(ctx, pin);
 
-    ulog_info("pin %d, mode: %d", pin, mode);
+    ulog_topic_debug("driver", "pin %d, mode: %d", pin, mode);
 
     switch (mode) {
         case HAL_GPIO_MODE_PULL_UP:
@@ -145,6 +150,7 @@ static int pico_set_mode(void *vctx, size_t pin, hal_gpio_mode_t mode)
             break;
 
         default:
+            ulog_topic_error("driver", "invalid mode: %d", mode);
             return HAL_GPIO_ERR_INVAL;
     }
 
@@ -213,6 +219,7 @@ static int pico_read(void *vctx, size_t pin, bool *value)
     hal_gpio_function_t fn;
     rc = pico_get_function(ctx, pin, &fn);
     if(rc != HAL_GPIO_OK) {
+        ulog_topic_error("driver", "pico_get_function failed: %d", rc);
         return rc;
     }
     if (fn == HAL_GPIO_FN_NONE) {
