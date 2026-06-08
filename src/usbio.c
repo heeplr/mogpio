@@ -75,6 +75,7 @@ static int apply_gpio_config(uint8_t bankid, uint8_t pin, uint8_t cfg)
 
     int rc = hal_gpio_set_function((size_t) bankid, (size_t) pin, f);
     if(rc != HAL_GPIO_OK) {
+        ulog_topic_error("usbio", "hal_gpio_set_function(%d, %d, %d) failed: %d", bankid, pin, f, rc);
         return rc;
     }
 
@@ -193,9 +194,14 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
                 "GPIO: INIT bank: %d pin: %d config: %d",
                 p->bankid, p->pin, p->config
             );
-            if(apply_gpio_config(p->bankid, p->pin, p->config) != HAL_GPIO_OK)
+            int rc = apply_gpio_config(p->bankid, p->pin, p->config);
+            if(rc != HAL_GPIO_OK) {
+                ulog_topic_error(
+                    "usbio", "apply_gpio_config(%d, %d, %d) failed: %d",
+                    p->bankid, p->pin, p->config, rc
+                );
                 goto _hp_error;
-
+            }
             break;
         }
 
@@ -204,7 +210,9 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             usbio_gpio_rw_t *in = (void*) req->data;
             usbio_gpio_rw_t out = { 0 };
 
-            ulog_topic_debug("usbio", "GPIO: READ bank: %d pin: %d", in->bankid, in->pin);
+            ulog_topic_debug(
+                "usbio", "GPIO: READ bank: %d pin: %d", in->bankid, in->pin
+            );
 
             /* read value of that pin */
             bool value;
@@ -221,7 +229,10 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
             resp->len = sizeof(out);
 
             if(ret != HAL_GPIO_OK) {
-                ulog_topic_error("usbio", "GPIO: READ error: %d", ret);
+                ulog_topic_error(
+                    "usbio", "hal_gpio_read(%d, %d) failed: %d",
+                    in->bankid, in->pin, ret
+                );
                 goto _hp_error;
             }
 
@@ -238,14 +249,20 @@ static void handle_gpio(usbio_ctrl_pkt_t *req, usbio_ctrl_pkt_t *resp)
 
             uint32_t mask = 1u << in->pin;
             bool high = (in->value & mask) != 0;
-            ulog_topic_debug("usbio", "GPIO: WRITE  bank: %d pin: %d -> %d", in->bankid, in->pin, high);
-            if(hal_gpio_write((size_t) in->bankid, (size_t) in->pin, high) != HAL_GPIO_OK)
+            ulog_topic_debug("usbio", "hal_gpio_write(%d, %d, %d)", in->bankid, in->pin, high);
+            int rc = hal_gpio_write((size_t) in->bankid, (size_t) in->pin, high);
+            if(rc != HAL_GPIO_OK) {
+                ulog_topic_error(
+                    "usbio", "hal_gpio_write(%d, %d, %d) failed: %d",
+                    in->bankid, in->pin, high, rc
+                );
                 goto _hp_error;
+            }
             break;
         }
 
         default:
-            ulog_topic_error("usbio", "GPIO: unknown cmd: %d", req->hdr.cmd);
+            ulog_topic_error("usbio", "unknown cmd: %d", req->hdr.cmd);
             goto _hp_error;
     }
 
@@ -273,7 +290,9 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
     // Used to test the direction
     bool dir_in = (request->bmRequestType_bit.direction == TUSB_DIR_IN) ? true : false;
 
-    ulog_topic_debug("usbio", "Control transfer: if=0x%02x stage=%d req=0x%02x type=0x%02x dir=%s wValue=0x%04x wIndex=0x%04x wLength=%d",
+    ulog_topic_debug(
+        "usbio",
+        "Control transfer: if=0x%02x stage=%d req=0x%02x type=0x%02x dir=%s wValue=0x%04x wIndex=0x%04x wLength=%d",
         request->wIndex,
         stage,
         request->bRequest,
@@ -284,7 +303,11 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
         request->wLength);
 
     if (request->bmRequestType_bit.type != TUSB_REQ_TYPE_VENDOR) {
-        ulog_topic_error("usbio", "type != VENDOR received: %d", request->bmRequestType_bit.type);
+        ulog_topic_error(
+            "usbio",
+            "type != VENDOR received: %d",
+            request->bmRequestType_bit.type
+        );
         return false;
     }
 
@@ -304,7 +327,11 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
 
             /* Stage 2: DATA -> receive */
             case CONTROL_STAGE_DATA:
-                ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_DATA (type: %d, cmd: %d, flags: %d)", ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags);
+                ulog_topic_debug(
+                    "usbio",
+                    "OUT: CONTROL_STAGE_DATA (type: %d, cmd: %d, flags: %d)",
+                    ctrl_req.hdr.type, ctrl_req.hdr.cmd, ctrl_req.hdr.flags
+                );
 
                 uint16_t len = 0;
                 memset(&ctrl_resp, 0, sizeof(ctrl_resp));
@@ -312,7 +339,9 @@ bool tud_vendor_control_xfer_cb(uint8_t rhport,
                 switch(ctrl_req.hdr.type) {
 
                     case USBIO_PKTTYPE_CTRL:
-                        ulog_topic_debug("usbio", "OUT: CONTROL_STAGE_SETUP: CTRL packet");
+                        ulog_topic_debug(
+                            "usbio", "OUT: CONTROL_STAGE_SETUP: CTRL packet"
+                        );
                         if(!handle_ctrl(ctrl_req.hdr.cmd, ctrl_resp.data, &len))
                             return false;
 

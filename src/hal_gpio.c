@@ -39,17 +39,19 @@
 static bool s_hal_initialized = false;
 
 
-
-/* amount of registered driver instances */
-static size_t _drivercount(void)
-{
-    return g_hal_gpio_layout.driver_count;
-}
-
 /* map bank:pin to hardware gpio */
 static int _gpio_from_bank_pin(size_t bankid, size_t pin, size_t *gpio)
 {
-    if (gpio == NULL || g_hal_gpio_layout.banks == NULL || bankid >= hal_gpio_bankcount()) {
+    if (gpio == NULL) {
+        ulog_topic_error("hal", "NULL pointer passed. This is a BUG!");
+        return HAL_GPIO_ERR_INVAL;
+    }
+    if (g_hal_gpio_layout.banks == NULL) {
+        ulog_topic_error("hal", "no banks initialized. This is a BUG!");
+        return HAL_GPIO_ERR_INVAL;
+    }
+    if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error("hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount());
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -60,6 +62,12 @@ static int _gpio_from_bank_pin(size_t bankid, size_t pin, size_t *gpio)
 
     *gpio = gpio_count + pin;
     return HAL_GPIO_OK;
+}
+
+/* amount of registered driver instances */
+static size_t _drivercount(void)
+{
+    return g_hal_gpio_layout.driver_count;
 }
 
 /* get driver + pin offset for hardware gpio */
@@ -75,7 +83,7 @@ static int _driver_pin_for_gpio(size_t gpio, hal_gpio_driver_t **driver, size_t 
         }
         count += drv->pin_count;
     }
-
+    ulog_topic_error("hal", "invalid gpio: %d", gpio);
     return HAL_GPIO_ERR_BOUNDS;
 }
 
@@ -89,11 +97,13 @@ size_t hal_gpio_bankcount(void)
 size_t hal_gpio_bank_pincount(size_t bankid)
 {
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error("hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount());
         return 0;
     }
 
     const hal_gpio_bank_t *bank = &g_hal_gpio_layout.banks[bankid];
     if (bank == NULL) {
+        ulog_topic_error("hal", "no such bank: %d", bankid);
         return 0;
     }
     return bank->pin_count;
@@ -119,18 +129,23 @@ size_t hal_gpio_pincount(void)
 int hal_gpio_init(void)
 {
     if (s_hal_initialized) {
+        ulog_topic_debug("hal", "hal_gpio_init() called twice. This is a BUG.");
         return HAL_GPIO_OK;
     }
 
     for (size_t d = 0; d < _drivercount(); ++d) {
         const hal_gpio_driver_t *driver = &g_hal_gpio_layout.drivers[d];
         if (driver == NULL) {
+            ulog_topic_error("hal", "NULL driver: %d", d);
             return HAL_GPIO_ERR_INVAL;
         }
 
         if (driver->ops->init != NULL) {
             int rc = driver->ops->init(driver->ctx);
             if (rc != HAL_GPIO_OK) {
+                ulog_topic_error(
+                    "hal", "driver %d failed to initialize: %d", d, rc
+                );
                 return rc;
             }
         }
@@ -144,10 +159,15 @@ int hal_gpio_init(void)
 int hal_gpio_deinit(void)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug(
+            "hal",
+            "called hal_gpio_deinit() before hal_gpio_init(). This is a BUG."
+        );
         return HAL_GPIO_OK;
     }
 
-        if (g_hal_gpio_layout.drivers == NULL) {
+    if (g_hal_gpio_layout.drivers == NULL) {
+        ulog_topic_error("hal", "no drivers registered");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -166,14 +186,21 @@ int hal_gpio_deinit(void)
 int hal_gpio_set_mode(size_t bankid, size_t pin, hal_gpio_mode_t mode)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug("hal", "HAL not initialized");
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
     if (pin >= hal_gpio_bank_pincount(bankid)) {
+        ulog_topic_error(
+            "hal", "invalid pin: %d >= %d", pin, hal_gpio_bank_pincount(bankid)
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
@@ -203,14 +230,21 @@ int hal_gpio_set_mode(size_t bankid, size_t pin, hal_gpio_mode_t mode)
 int hal_gpio_set_function(size_t bankid, size_t pin, hal_gpio_function_t function)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug("hal", "HAL not initialized");
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
     if (pin >= hal_gpio_bank_pincount(bankid)) {
+        ulog_topic_error(
+            "hal", "invalid pin: %d >= %d", pin, hal_gpio_bank_pincount(bankid)
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
@@ -230,6 +264,7 @@ int hal_gpio_set_function(size_t bankid, size_t pin, hal_gpio_function_t functio
     }
 
     if (driver == NULL || driver->ops->set_function == NULL) {
+        ulog_topic_error("hal", "no ops->set_function()");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -240,14 +275,21 @@ int hal_gpio_set_function(size_t bankid, size_t pin, hal_gpio_function_t functio
 int hal_gpio_read(size_t bankid, size_t pin, bool *value)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug("hal", "HAL not initialized");
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
     if (pin >= hal_gpio_bank_pincount(bankid)) {
+        ulog_topic_error(
+            "hal", "invalid pin: %d >= %d", pin, hal_gpio_bank_pincount(bankid)
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
@@ -267,6 +309,7 @@ int hal_gpio_read(size_t bankid, size_t pin, bool *value)
     }
 
     if (driver == NULL || driver->ops->read == NULL) {
+        ulog_topic_error("hal", "no ops->read()");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -277,14 +320,21 @@ int hal_gpio_read(size_t bankid, size_t pin, bool *value)
 int hal_gpio_write(size_t bankid, size_t pin, bool value)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug("hal", "HAL not initialized");
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
     if (pin >= hal_gpio_bank_pincount(bankid)) {
+        ulog_topic_error(
+            "hal", "invalid pin: %d >= %d", pin, hal_gpio_bank_pincount(bankid)
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
@@ -304,6 +354,7 @@ int hal_gpio_write(size_t bankid, size_t pin, bool value)
     }
 
     if (driver == NULL || driver->ops->write == NULL) {
+        ulog_topic_error("hal", "no ops->write()");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -314,14 +365,21 @@ int hal_gpio_write(size_t bankid, size_t pin, bool value)
 int hal_gpio_get_function(size_t bankid, size_t pin, hal_gpio_function_t *function)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug("hal", "HAL not initialized");
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
     if (pin >= hal_gpio_bank_pincount(bankid)) {
+        ulog_topic_error(
+            "hal", "invalid pin: %d >= %d", pin, hal_gpio_bank_pincount(bankid)
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
@@ -341,6 +399,7 @@ int hal_gpio_get_function(size_t bankid, size_t pin, hal_gpio_function_t *functi
     }
 
     if (driver == NULL || driver->ops->get_function == NULL) {
+        ulog_topic_error("hal", "no ops->get_function()");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -351,14 +410,21 @@ int hal_gpio_get_function(size_t bankid, size_t pin, hal_gpio_function_t *functi
 int hal_gpio_get_mode(size_t bankid, size_t pin, hal_gpio_mode_t *mode)
 {
     if (!s_hal_initialized) {
+        ulog_topic_debug("hal", "HAL not initialized");
         return HAL_GPIO_ERR_NOT_INIT;
     }
 
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
     if (pin >= hal_gpio_bank_pincount(bankid)) {
+        ulog_topic_error(
+            "hal", "invalid pin: %d >= %d", pin, hal_gpio_bank_pincount(bankid)
+        );
         return HAL_GPIO_ERR_BOUNDS;
     }
 
@@ -378,6 +444,7 @@ int hal_gpio_get_mode(size_t bankid, size_t pin, hal_gpio_mode_t *mode)
     }
 
     if (driver == NULL || driver->ops->get_mode == NULL) {
+        ulog_topic_error("hal", "no ops->get_mode()");
         return HAL_GPIO_ERR_INVAL;
     }
 
@@ -388,6 +455,9 @@ int hal_gpio_get_mode(size_t bankid, size_t pin, hal_gpio_mode_t *mode)
 const char *hal_gpio_bank_name(size_t bankid)
 {
     if (bankid >= hal_gpio_bankcount()) {
+        ulog_topic_error(
+            "hal", "invalid bankid: %d >= %d", bankid, hal_gpio_bankcount()
+        );
         return NULL;
     }
 

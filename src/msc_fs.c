@@ -231,15 +231,14 @@ static size_t build_config_text(char *data, size_t capacity) {
             }
 
             used = append_fmt(data, capacity, used, "%u:%u=%s,%s\r\n", bankid, pin, func_str, mode_str);
-            if (used == SIZE_MAX) {
+            if (used >= SIZE_MAX) {
+                ulog_topic_error("msc", "exceeded max. file size: %d bytes", SIZE_MAX);
                 return 0;
             }
         }
     }
 
-    if (used < capacity) {
-        data[used] = '\0';
-    }
+    data[used] = '\0';
     return used;
 }
 
@@ -259,15 +258,14 @@ static size_t build_pins_text(char *data, size_t capacity) {
             } else {
                 used = append_fmt(data, capacity, used, "%u:%u=%u\r\n", bankid, pin, value ? 1u : 0u);
             }
-            if (used == SIZE_MAX) {
+            if (used >= SIZE_MAX) {
+                ulog_topic_error("msc", "exceeded max. file size: %d bytes", SIZE_MAX);
                 return 0;
             }
         }
     }
 
-    if (used < capacity) {
-        data[used] = '\0';
-    }
+    data[used] = '\0';
     return used;
 }
 
@@ -275,9 +273,11 @@ static size_t build_pins_text(char *data, size_t capacity) {
 static bool parse_config_line(const char *line, size_t len) {
     char buf[128];
     if (len == 0) {
+        ulog_topic_debug("msc", "skipping empty config line");
         return true;
     }
     if (len >= sizeof(buf)) {
+        ulog_topic_error("msc", "config line too long: %d >= %d", len, sizeof(buf));
         return false;
     }
 
@@ -286,12 +286,14 @@ static bool parse_config_line(const char *line, size_t len) {
 
     char *sep = strchr(buf, ':');
     if (!sep) {
+        ulog_topic_error("msc", "no : separator found");
         return false;
     }
     *sep = '\0';
 
     char *eq = strchr(sep + 1, '=');
     if (!eq) {
+        ulog_topic_error("msc", "no = found");
         return false;
     }
     *eq = '\0';
@@ -307,17 +309,25 @@ static bool parse_config_line(const char *line, size_t len) {
     rhs = (char *)skip_ws(rhs, rhs + strlen(rhs));
     rtrim_ws(rhs);
 
-    if (*bank == '\0' || *lhs == '\0' || *rhs == '\0') {
+    if (*bank == '\0') {
+        ulog_topic_error("msc", "empty bankid value");
         return false;
     }
-
+    if (*lhs == '\0') {
+        ulog_topic_error("msc", "empty pin value");
+    }
+    if (*rhs == '\0') {
+        ulog_topic_error("msc", "empty mode value");
+    }
     uint32_t bankid = 0;
     if (!parse_u32(bank, &bankid) || bankid >= (uint32_t) hal_gpio_bankcount()) {
+        ulog_topic_error("msc", "invalid bankid: %s", bank);
         return false;
     }
 
     uint32_t pin = 0;
     if (!parse_u32(lhs, &pin) || pin >= (uint32_t) hal_gpio_bank_pincount((size_t) bankid)) {
+        ulog_topic_error("msc", "invalid pin: %s", pin);
         return false;
     }
 
@@ -329,6 +339,7 @@ static bool parse_config_line(const char *line, size_t len) {
         pull_s = (char *)skip_ws(pull_s, pull_s + strlen(pull_s));
         rtrim_ws(pull_s);
         if (*pull_s == '\0' || !parse_mode(pull_s, &mode)) {
+            ulog_topic_error("msc", "invalid mode: \"%s\"", pull_s);
             return false;
         }
     }
@@ -343,11 +354,21 @@ static bool parse_config_line(const char *line, size_t len) {
     ulog_topic_debug("msc", "configuring bank: %lu, pin: %lu, func: %d, mode: %d",
          bankid, pin, function, mode);
 
-    if(hal_gpio_set_mode((size_t) bankid, (size_t) pin, mode) != HAL_GPIO_OK) {
+    int rc = hal_gpio_set_mode((size_t) bankid, (size_t) pin, mode);
+    if(rc != HAL_GPIO_OK) {
+        ulog_topic_error(
+            "msc", "hal_gpio_set_mode(%d, %d, %d) failed: %d",
+            bankid, pin, mode, rc
+        );
         return false;
     }
 
-    if(hal_gpio_set_function((size_t) bankid, (size_t) pin, function) != HAL_GPIO_OK) {
+    rc = hal_gpio_set_function((size_t) bankid, (size_t) pin, function);
+    if(rc != HAL_GPIO_OK) {
+        ulog_topic_error(
+            "msc", "hal_gpio_set_function(%d, %d, %d) failed: %d",
+            bankid, pin, function, rc
+        );
         return false;
     }
 
@@ -588,6 +609,7 @@ void sync_to_fatfs() {
         if (next_cluster > (uint16_t)(2 + DATA_CLUSTERS)) {
             // You can assert here, or truncate, or refuse to mount.
             // For safety in production, do not build an invalid image.
+            ulog_topic_error("msc", "cluster exhaustion. halting.");
             while (1) { /* cluster exhaustion */ }
         }
 
@@ -758,12 +780,19 @@ int32_t tud_msc_read10_cb(uint8_t lun, uint32_t lba,
         hal_pins_configured = true;
     }
 
-    if (lba >= DISK_BLOCK_NUM)
+    if (lba >= DISK_BLOCK_NUM) {
+        ulog_topic_error(
+            "msc", "lba (%d) >= DISK_BLOCK_NUM (%d)",
+            lba, DISK_BLOCK_NUM
+        );
         return -1;
+    }
 
     int fid = find_file_by_lba(lba);
-    ulog_topic_debug("msc", "lun: %d lba: %ld offset: %ld bufsize: %ld fid: %d",
-        lun, lba, offset, bufsize, fid);
+    ulog_topic_debug(
+        "msc", "lun: %d lba: %ld offset: %ld bufsize: %ld fid: %d",
+        lun, lba, offset, bufsize, fid
+    );
 
     /* upon first block of a READ10 session */
     if (fid >= 0 && offset == 0) {
