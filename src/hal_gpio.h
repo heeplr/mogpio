@@ -104,11 +104,7 @@ typedef struct hal_gpio_driver {
     size_t pin_count;
 } hal_gpio_driver_t;
 
-/*
- * A bank is a logical block of GPIOs.
- *
- * Bank descriptors no longer carry driver state.
- */
+/* a bank is a logical block of GPIOs */
 typedef struct {
     size_t bank_id;
     const char *name;
