@@ -39,7 +39,7 @@ bool parse_u8(const char *s, uint8_t *out);
 bool parse_function(const char *s, hal_gpio_function_t *fn);
 bool parse_mode(const char *s, hal_gpio_mode_t *mode);
 bool parse_bank_pin(const char *s, size_t *bank, size_t *pin);
-bool parse_value01(const char *s, bool *value);
+bool parse_boolean(const char *s, bool *value);
 
 
 #endif /* _UTIL_H */

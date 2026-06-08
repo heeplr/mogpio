@@ -250,7 +250,7 @@ bool parse_bank_pin(const char *s, size_t *bank, size_t *pin)
 }
 
 /* parse binary value */
-bool parse_value01(const char *s, bool *value)
+bool parse_boolean(const char *s, bool *value)
 {
     if (!s || !value) {
         return false;
