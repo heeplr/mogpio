@@ -18,6 +18,7 @@ access GPIOs using:
   * reading/writing files on emulated mass storage device
 
 
+
 # Install
 
 Copy
@@ -54,6 +55,7 @@ should come with any linux kernel >=6.18.x
 [^2]: `gpiomon` command and libgpiod events will fail as interrupts are not
        supported in the usbio driver (yet).
 
+Example: `$ gpioset /dev/gpiochip1 25=1`
 
 
 
@@ -73,6 +75,9 @@ The terminal uses [microrl-remaster](https://github.com/dimmykar/microrl-remaste
 * line editing
 * command history
 * tab completion
+
+
+Example: `$ echo "write 0:25 1" > /dev/ttyACM0`
 
 
 
@@ -133,6 +138,12 @@ Example:
 0:7=IN,DOWN
 0:8=OUT,PUSHPULL
 ```
+
+```
+$ echo 0:25=1 > /mnt/moGPIO/PINS.TXT
+$ sync
+```
+
 
 
 # Development
