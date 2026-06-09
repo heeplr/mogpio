@@ -381,6 +381,8 @@ static bool parse_pin_line(const char *line, size_t len) {
         return true;
     }
 
+    ulog_topic_debug("msc", "parsing line: \"%.*s\" (%d)", len, line, len);
+
     char buf[16];
     if (len >= sizeof(buf)) {
         ulog_topic_error("msc", "buffer overflow");
@@ -394,14 +396,14 @@ static bool parse_pin_line(const char *line, size_t len) {
     /* find separators and \0 terminate */
     char *sep = strchr(buf, ':');
     if (!sep) {
-        ulog_topic_error("msc", "no : separator found");
+        ulog_topic_error("msc", "no : separator found in \"%s\"", buf);
         return false;
     }
     *sep = '\0';
 
     char *eq = strchr(sep + 1, '=');
     if (!eq) {
-        ulog_topic_error("msc", "no = separator found");
+        ulog_topic_error("msc", "no = separator found in \"%s\"", sep + 1);
         return false;
     }
     *eq = '\0';
@@ -817,11 +819,16 @@ int32_t tud_msc_write10_cb(uint8_t lun, uint32_t lba,
     (void) lun;
 
     if (lba >= DISK_BLOCK_NUM) {
+        ulog_topic_warn("msc", "out of bounds block write: %d >= DISK_BLOCK_NUM", lba);
         return -1;
     }
 
     ulog_topic_debug("msc", "lun: %d lba: %ld offset: %ld bufsize: %ld",
         lun, lba, offset, bufsize);
+
+    /* mark file as dirty */
+    int fid = find_file_by_lba(lba);
+    if (fid >= 0) files[fid].dirty = true;
 
     /* copy to ramdisk */
     memcpy(msc_disk0[lba] + offset, buffer, bufsize);
