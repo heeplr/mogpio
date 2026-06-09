@@ -273,7 +273,6 @@ const hal_gpio_layout_t g_hal_gpio_layout = {
 
 
 # TODO
-* runtime loglevel config + terminal debugging
 * ESP32 port
 * support interrupts
 * onboard minimal documentation
