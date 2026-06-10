@@ -276,9 +276,14 @@ const hal_gpio_layout_t g_hal_gpio_layout = {
 
 # TODO
 * ESP32 port
-* support interrupts
-* onboard minimal documentation
-* optimization
-* proper pin bit-mapping (usbio pinmask, first/last gpio etc.)
 * tests
 * configure HAL dynamically + non-volatile config?
+  Should be possible to compile all drivers, load them at runtime, configure pins where hardware is connected and store config in flash.
+* support interrupts
+  * configure watching for rising/falling/both edges and generate CDC output
+* onboard minimal documentation/URL for MSC (README.TXT)
+* optimization
+  * use PIO for SIPO/PISO
+  * use separate core for USB?
+* proper pin bit-mapping (usbio pinmask, first/last gpio etc.)
+  * would be nice but not even the usbio linux driver implements the protocol
