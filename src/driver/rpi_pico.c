@@ -115,8 +115,16 @@ static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
         return HAL_GPIO_ERR_INVAL;
     }
 
-    if(function != HAL_GPIO_FN_NOCHANGE)
+    if(function != HAL_GPIO_FN_NOCHANGE) {
+        /*
+        * Force the pad back to SIO before changing direction. gpio_set_dir()
+        * alone trusts whatever function-select the pin is already in; if
+        * something else (board_init(), a prior layout, ...) left it muxed to a
+        * peripheral, set_dir()/put() report success but the pad never moves.
+        */
+        gpio_init(gpio);
         gpio_set_dir(gpio, function == HAL_GPIO_FN_OUTPUT);
+    }
 
     return HAL_GPIO_OK;
 }
