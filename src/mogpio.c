@@ -35,6 +35,7 @@
 #include "console.h"
 #include "terminal.h"
 #include "ulog.h"
+#include "version.h"
 
 
 void tud_mount_cb(void) {}
@@ -90,7 +91,9 @@ int main(void) {
     /* TinyUSB init */
     tusb_init();
 
-    ulog_info("moGPIO initialized");
+    ulog_info(
+        "moGPIO %s (commit <%s>) initialized", MOGPIO_VERSION, MOGPIO_COMMIT
+    );
 
     while (1) {
         tud_task();

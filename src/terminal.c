@@ -34,6 +34,7 @@
 #include "hal_gpio_layout.h"
 #include "microrl.h"
 #include "util.h"
+#include "version.h"
 
 
 /* microrl context */
@@ -91,6 +92,7 @@ static void cmd_usage(void)
 {
     ulog_level loglevel;
 
+    _printf("\r\nmoGPIO %s (commit <%s>) usage:\r\n", MOGPIO_VERSION, MOGPIO_COMMIT);
     _printf("\r\nloglevel:\r\n");
     ulog_topic_level_get("usbio", &loglevel);
     _printf(" usbio:\t\t%s\r\n", ulog_level_to_string(loglevel));
