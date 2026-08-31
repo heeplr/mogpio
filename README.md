@@ -160,7 +160,7 @@ Currently there are 3 layouts:
 
 A new layout/driver can be implemented easily:
 
-1. create `dirver/yourdriver.c` to access the GPIOs and implement the
+1. create `driver/yourdriver.c` to access the GPIOs and implement the
    following functions and exports them using a `hal_gpio_driver_ops_t` structure:
 
 
@@ -209,7 +209,7 @@ static int read(void *vctx, size_t pin, bool *value)
 
 static int write(void *vctx, size_t pin, bool value)
 {
-    // write value to output pin
+    // write value to output pin or
     return HAL_GPIO_ERR_UNSUPPORTED;
 }
 
@@ -249,11 +249,13 @@ static const hal_gpio_driver_t s_drivers[] = {
  * in sequential order
  */
 static const hal_gpio_bank_t s_banks[] = {
+    // ... other drivers before yours
     {
         .bank_id = 0,
         .name = "yourdriver-chain",
         .pin_count = 16,
     },
+    // ... other drivers after yours
 };
 
 /* this layout */
@@ -267,16 +269,21 @@ const hal_gpio_layout_t g_hal_gpio_layout = {
 
 3. add your driver to `target_sources()` in all supported `cmake/*.cmake` platform files
 
-4. add your layout as `elseif(LAYOUT STREQUAL "yourlayout") to compile necessary drivers
+4. add your layout as `elseif(LAYOUT STREQUAL "yourlayout")` to compile necessary drivers
 
 
 
 
 # TODO
 * ESP32 port
-* support interrupts
-* onboard minimal documentation
-* optimization
-* proper pin bit-mapping (usbio pinmask, first/last gpio etc.)
 * tests
 * configure HAL dynamically + non-volatile config?
+  Should be possible to compile all drivers, load them at runtime, configure pins where hardware is connected and store config in flash.
+* support interrupts
+  * configure watching for rising/falling/both edges and generate CDC output
+* onboard minimal documentation/URL for MSC (README.TXT)
+* optimization
+  * use PIO for SIPO/PISO
+  * use separate core for USB?
+* proper pin bit-mapping (usbio pinmask, first/last gpio etc.)
+  * would be nice but not even the usbio linux driver implements the protocol
