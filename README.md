@@ -77,8 +77,64 @@ The terminal uses [microrl-remaster](https://github.com/dimmykar/microrl-remaste
 * tab completion
 
 
-Example: `$ echo "write 0:25 1" > /dev/ttyACM0`
+Example: 
 
+```bash
+$ echo "write 0:25 1" > /dev/ttyACM0
+```
+
+Using a terminal:
+
+```
+$ picocom /dev/ttyACM0
+picocom v2024-07
+
+port is        : /dev/ttyACM0
+flowcontrol    : none
+baudrate is    : 9600
+parity is      : none
+databits are   : 8
+stopbits are   : 1
+txdelay is     : 0 ns
+escape is      : C-a
+local echo is  : no
+noinit is      : no
+noreset is     : no
+hangup is      : no
+nolock is      : no
+send_cmd is    : sz -vv
+receive_cmd is : rz -vv -E
+imap is        : 
+omap is        : 
+emap is        : crcrlf,delbs,
+logfile is     : none
+initstring     : none
+exit_after is  : not set
+exit is        : no
+minimal cmds is: no
+
+Type [C-a] [C-h] to see available commands
+Terminal ready
+
+?
+WARN  [terminal] /github/workspace/src/terminal.c:379: command ? failed
+
+loglevel:
+ usbio:         TRACE
+ msc:           TRACE
+ terminal:      TRACE
+ driver:        TRACE
+ hal:           TRACE
+
+Commands:
+  list
+  read <bank>:<pin>
+  write <bank>:<pin> <0|1>
+  config <bank>:<pin> <function> [mode]
+    function: none|input|output
+    mode: pull_up|pull_down|pushpull
+  log_level <all|usbio|msc|terminal|driver|hal|all> <trace|debug|info|warn|error|fatal>
+```
 
 
 ## 3. Mass Storage Class Device
@@ -144,6 +200,19 @@ $ echo 0:25=1 > /mnt/moGPIO/PINS.TXT
 $ sync
 ```
 
+
+# Debugging
+Logging output can be increased at runtime via the CDC interface:
+
+```bash
+mogpio> log_level all debug
+mogpio>
+```
+...will set the loglevel for all modules to "debug".
+
+The `*-debug-*` builds:
+- include debugging symbols (gdb)
+- use serial output/USB CDC as debug output console on some platforms
 
 
 # Development
