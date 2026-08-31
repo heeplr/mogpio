@@ -110,6 +110,9 @@ static int pico_set_function(void *vctx, size_t pin, hal_gpio_function_t functio
         return HAL_GPIO_OK;
     }
 
+    /* gpio_init() puts the pad into a known state before we configure it. */
+    gpio_init(gpio);
+
     if (function != HAL_GPIO_FN_INPUT && function != HAL_GPIO_FN_OUTPUT) {
         ulog_topic_error("driver", "invalid function: %d", function);
         return HAL_GPIO_ERR_INVAL;
