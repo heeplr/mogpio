@@ -345,6 +345,8 @@ const hal_gpio_layout_t g_hal_gpio_layout = {
 
 # TODO
 * ESP32 port
+* PWM support
+* [ssh support](https://github.com/tjko/pico-sshd) for networked platforms
 * tests
 * configure HAL dynamically + non-volatile config?
   Should be possible to compile all drivers, load them at runtime, configure pins where hardware is connected and store config in flash.
