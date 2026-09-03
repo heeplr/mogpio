@@ -215,6 +215,21 @@ The `*-debug-*` builds:
 - use serial output/USB CDC as debug output console on some platforms
 
 
+# Building
+
+(replace "PICO_SDK_PATH=..." with the path to your pico sdk (or run cmake without it when your environment is setup)
+
+```bash
+$ git clone --recursive https://github.com/heeplr/mogpio
+$ cd mogpio
+$ mkdir build
+$ cd build
+$ PICO_SDK_PATH="/opt/pico-sdk" cmake ..
+$ cmake --build .
+$ cp mogpio.uf2 /mnt/pico/
+```
+
+
 # Development
 
 It should be easily possible to port moGPIO to other platforms or add different
